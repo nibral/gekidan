@@ -7,7 +7,8 @@ async fn main() -> std::io::Result<()> {
 
     log::info!("Starting server at http://localhost:8080");
 
-    let server = HttpServer::new(|| create_app())
-        .bind(("127.0.0.1", 8080))?;
-    server.run().await
+    HttpServer::new(|| create_app())
+        .bind(("127.0.0.1", 8080))?
+        .run()
+        .await
 }

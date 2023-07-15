@@ -1,2 +1,5 @@
 /target
+/migrations/target
 /.idea
+*.sqlite3
+.env
