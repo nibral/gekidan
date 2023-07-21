@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use async_trait::async_trait;
-use crate::domain::error::CommonError;
+use crate::domain::error::{CommonError, CommonErrorCode};
 use crate::domain::models::user::{CreateUser, User};
 use crate::domain::repositories::user::UserRepository;
 use crate::domain::services::user::UserService;
@@ -21,7 +21,7 @@ impl UserServiceImpl {
 impl UserService for UserServiceImpl {
     async fn create(&self, new_user: CreateUser) -> Result<User, CommonError> {
         self.user_repository
-            .create(&new_user)
+            .create(&User::from(new_user))
             .await
     }
 
@@ -32,9 +32,16 @@ impl UserService for UserServiceImpl {
     }
 
     async fn get(&self, user_id: String) -> Result<User, CommonError> {
-        self.user_repository
+        let result = self.user_repository
             .get(user_id)
-            .await
+            .await;
+        match result {
+            Ok(user) => match user {
+                Some(u) => Ok(u),
+                _ => Err(CommonError::new(CommonErrorCode::UserDoesNotExists))
+            },
+            Err(e) => Err(e)
+        }
     }
 
     async fn delete(&self, user_id: String) -> Result<(), CommonError> {
