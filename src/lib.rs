@@ -2,6 +2,7 @@ pub mod api {
     pub mod controllers {
         pub mod root_handlers;
         pub mod user_handlers;
+        pub mod well_known_handlers;
     }
 
     pub mod dto {
@@ -11,6 +12,7 @@ pub mod api {
 
 mod domain {
     pub mod models {
+        pub mod app_config;
         pub mod user;
     }
 
@@ -19,6 +21,7 @@ mod domain {
     }
 
     pub mod services {
+        pub mod app_config;
         pub mod user;
     }
 
@@ -41,6 +44,10 @@ mod infrastructure {
         pub mod user;
     }
 
+    pub mod services {
+        pub mod app_config;
+    }
+
     pub mod error;
 }
 
@@ -48,5 +55,4 @@ pub mod services {
     pub mod user;
 }
 
-pub mod container;
 pub mod create_app;
