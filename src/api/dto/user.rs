@@ -28,11 +28,20 @@ impl Into<UserDTO> for User {
         }
     }
 }
+
 impl Into<CreateUser> for CreateUserDTO {
     fn into(self) -> CreateUser {
         CreateUser {
             username: self.username,
             display_name: self.display_name,
+        }
+    }
+}
+
+impl From<Vec<User>> for ListUsersDTO {
+    fn from(value: Vec<User>) -> Self {
+        ListUsersDTO {
+            users: value.iter().map(|u| u.clone().into()).collect()
         }
     }
 }

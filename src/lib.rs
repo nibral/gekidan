@@ -23,6 +23,7 @@ mod domain {
     }
 
     pub mod constants;
+    pub mod error;
 }
 
 mod infrastructure {
@@ -39,6 +40,8 @@ mod infrastructure {
     pub mod repositories {
         pub mod user;
     }
+
+    pub mod error;
 }
 
 pub mod services {

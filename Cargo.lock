@@ -1085,6 +1085,7 @@ dependencies = [
  "env_logger",
  "log",
  "migrations",
+ "once_cell",
  "sea-orm",
  "serde",
  "serde_json",
