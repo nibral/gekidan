@@ -1,4 +1,3 @@
-use dotenv::dotenv;
 use crate::domain::constants::APP_URL;
 use crate::domain::models::app_config::AppConfig;
 use crate::domain::services::app_config::AppConfigService;
@@ -9,7 +8,6 @@ pub struct AppConfigServiceImpl {
 
 impl AppConfigServiceImpl {
     pub async fn new() -> Self {
-        dotenv().ok();
         AppConfigServiceImpl {
             app_config: AppConfig {
                 app_url: dotenv::var(APP_URL).expect(&*format!("{} must be set", APP_URL))
