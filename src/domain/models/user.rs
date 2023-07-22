@@ -29,3 +29,24 @@ impl From<CreateUser> for User {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::domain::models::user::{CreateUser, User};
+
+    #[test]
+    fn generate_user_instance_from_creation_info() {
+        let creation_info = CreateUser {
+            username: "John Doe".to_string(),
+            display_name: "john".to_string(),
+        };
+        let user = User::from(creation_info);
+
+        assert_ne!(user.id, "");
+        assert_eq!(user.username, "John Doe");
+        assert_eq!(user.display_name, "john");
+        assert_ne!(user.created_at, "");
+        assert_ne!(user.updated_at, "");
+        assert_eq!(user.created_at, user.updated_at);
+    }
+}

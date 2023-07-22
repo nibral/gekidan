@@ -42,3 +42,13 @@ static COMMON_ERROR_MESSAGES: Lazy<Mutex<HashMap<CommonErrorCode, String>>> = La
     Mutex::new(m)
 });
 
+#[cfg(test)]
+mod tests {
+    use crate::domain::error::{CommonError, CommonErrorCode};
+
+    #[test]
+    fn get_error_message_from_code() {
+        let err = CommonError::new(CommonErrorCode::UnexpectedDBError);
+        assert_eq!(err.get_message(), "Unexpected DB Error");
+    }
+}
