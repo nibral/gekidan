@@ -21,6 +21,7 @@ mod domain {
     }
 
     pub mod services {
+        pub mod activity_pub;
         pub mod app_config;
         pub mod user;
     }
@@ -44,14 +45,12 @@ mod infrastructure {
         pub mod user;
     }
 
-    pub mod services {
-        pub mod app_config;
-    }
-
     pub mod error;
 }
 
 pub mod services {
+    pub mod activity_pub;
+    pub mod app_config;
     pub mod user;
 }
 
