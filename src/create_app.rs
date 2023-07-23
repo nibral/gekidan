@@ -36,6 +36,9 @@ pub fn create_app() -> App<
                 .route("/nodeinfo", web::get().to(well_known_handlers::node_info_links))
         )
         .service(
+            web::scope("/nodeinfo/2.1").route("", web::get().to(well_known_handlers::node_info))
+        )
+        .service(
             web::scope("/users")
                 .route("", web::get().to(user_handlers::list_users_handler))
                 .route("", web::post().to(user_handlers::create_user_handler))

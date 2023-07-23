@@ -19,15 +19,15 @@ impl Container {
         let app_config_service: Arc<dyn AppConfigService> = Arc::new(
             AppConfigServiceImpl::new().await
         );
+        let user_repository: Arc<dyn UserRepository> = Arc::new(
+            UserSeaORMRepository::new(db_conn().await)
+        );
 
         let activity_pub_service: Arc<dyn ActivityPubService> = Arc::new(
             ActivityPubServiceImpl {
                 app_config_service,
+                user_repository: user_repository.clone(),
             }
-        );
-
-        let user_repository: Arc<dyn UserRepository> = Arc::new(
-            UserSeaORMRepository::new(db_conn().await)
         );
         let user_service: Arc<dyn UserService> = Arc::new(
             UserServiceImpl { user_repository }

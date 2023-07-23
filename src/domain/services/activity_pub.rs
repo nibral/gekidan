@@ -1,6 +1,9 @@
-pub trait ActivityPubService {
-    fn host_meta(&self) -> String;
-    fn web_finger(&self) -> String;
-    fn node_info_links(&self) -> String;
-    fn node_info(&self) -> String;
+use async_trait::async_trait;
+
+#[async_trait]
+pub trait ActivityPubService: Sync + Send {
+    async fn host_meta(&self) -> String;
+    async fn web_finger(&self) -> String;
+    async fn node_info_links(&self) -> String;
+    async fn node_info(&self) -> String;
 }

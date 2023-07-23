@@ -25,6 +25,21 @@ mod test_well_known_handler {
         assert!(res.status().is_success());
         assert_eq!(res.headers().get("Content-Type").unwrap().to_str().unwrap(), "application/json");
         let body: NodeInfoLinks = test::read_body_json(res).await;
-        assert_eq!(body.rel, "http://nodeinfo.diaspora.software/ns/schema/2.1")
+        assert_eq!(body.rel, "http://nodeinfo.diaspora.software/ns/schema/2.1");
+
+        // nodeinfo
+        #[derive(Deserialize)]
+        struct Software {
+            name: String,
+        }
+        #[derive(Deserialize)]
+        struct NodeInfo {
+            software: Software,
+        }
+        let res = test::TestRequest::get().uri("/nodeinfo/2.1").send_request(&app).await;
+        assert!(res.status().is_success());
+        assert_eq!(res.headers().get("Content-Type").unwrap().to_str().unwrap(), "application/json");
+        let body: NodeInfo = test::read_body_json(res).await;
+        assert_eq!(body.software.name, "Gekidan");
     }
 }
