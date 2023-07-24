@@ -50,14 +50,14 @@ impl UserRepository for UserSeaORMRepository {
             })
     }
 
-    async fn get(&self, user_id: String) -> Result<Option<User>, CommonError> {
+    async fn get(&self, user_id: String) -> Result<User, CommonError> {
         let result = user::Entity::find_by_id(&user_id).one(&self.db_conn)
             .await;
 
         match result {
             Ok(user) => match user {
-                Some(u) => Ok(Some(u.into())),
-                _ => Ok(None),
+                Some(u) => Ok(u.into()),
+                _ => Err(CommonError::new(CommonErrorCode::UserDoesNotExists)),
             },
             Err(e) => {
                 log::error!("Unexpected DB Error: {}", e.to_string());

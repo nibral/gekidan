@@ -32,16 +32,9 @@ impl UserService for UserServiceImpl {
     }
 
     async fn get(&self, user_id: String) -> Result<User, CommonError> {
-        let result = self.user_repository
+        self.user_repository
             .get(user_id)
-            .await;
-        match result {
-            Ok(user) => match user {
-                Some(u) => Ok(u),
-                _ => Err(CommonError::new(CommonErrorCode::UserDoesNotExists))
-            },
-            Err(e) => Err(e)
-        }
+            .await
     }
 
     async fn delete(&self, user_id: String) -> Result<(), CommonError> {
