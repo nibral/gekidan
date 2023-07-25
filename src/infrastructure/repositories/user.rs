@@ -4,6 +4,7 @@ use sea_orm::{ActiveModelTrait, DbConn};
 use sea_orm::prelude::*;
 use crate::domain::error::{CommonError, CommonErrorCode};
 use crate::domain::models::user::User;
+use crate::domain::models::user_rsa_key::UserRsaKey;
 use crate::domain::repositories::user::UserRepository;
 use crate::domain::services::rsa_key::RsaKeyService;
 use crate::infrastructure::entities::{user, user_rsa_key};
@@ -110,5 +111,32 @@ impl UserRepository for UserSeaORMRepository {
                 log::error!("Unexpected DB Error: {}", e.to_string());
                 CommonError::new(CommonErrorCode::UnexpectedDBError)
             })
+    }
+
+    async fn find_by_username_with_rsa_key(&self, username: String) -> Result<(User, UserRsaKey), CommonError> {
+        let result = user::Entity::find()
+            .find_also_related(user_rsa_key::Entity)
+            .filter(user::Column::Username.eq(username))
+            .one(&self.db_conn)
+            .await;
+
+        let (user, key_pair) = match result {
+            Ok(u) => match u {
+                Some(pair) => pair,
+                _ => return Err(CommonError::new(CommonErrorCode::UserDoesNotExists))
+            }
+            Err(e) => {
+                log::error!("Unexpected DB Error: {}", e.to_string());
+                return Err(CommonError::new(CommonErrorCode::UnexpectedDBError))
+            }
+        };
+
+        match key_pair {
+            Some(k) => Ok((user.into(), k.into())),
+            _ => {
+                log::error!("Unexpected DB state: user rsa key pair not found");
+                Err(CommonError::new(CommonErrorCode::UserDoesNotExists))
+            }
+        }
     }
 }

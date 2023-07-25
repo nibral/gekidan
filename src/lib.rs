@@ -14,6 +14,7 @@ mod domain {
     pub mod models {
         pub mod app_config;
         pub mod user;
+        pub mod user_rsa_key;
     }
 
     pub mod repositories {
@@ -40,6 +41,7 @@ mod infrastructure {
 
     pub mod models {
         pub mod user;
+        pub mod user_rsa_key;
     }
 
     pub mod repositories {
