@@ -23,6 +23,7 @@ mod domain {
     pub mod services {
         pub mod activity_pub;
         pub mod app_config;
+        pub mod rsa_key;
         pub mod user;
     }
 

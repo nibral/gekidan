@@ -5,7 +5,8 @@ use sea_orm::prelude::*;
 use crate::domain::error::{CommonError, CommonErrorCode};
 use crate::domain::models::user::User;
 use crate::domain::repositories::user::UserRepository;
-use crate::infrastructure::entities::user;
+use crate::domain::services::rsa_key::RsaKeyService;
+use crate::infrastructure::entities::{user, user_rsa_key};
 
 pub struct UserSeaORMRepository {
     pub db_conn: DbConn,
@@ -28,13 +29,31 @@ impl UserRepository for UserSeaORMRepository {
             updated_at: Set(new_user.updated_at.clone()),
         };
 
-        user.insert(&self.db_conn)
-            .await
-            .map(|u| u.into())
-            .map_err(|e| {
+        // add user
+        let result: User = match user.insert(&self.db_conn).await {
+            Ok(u) => u.into(),
+            Err(e) => {
                 log::error!("Unexpected DB Error: {}", e.to_string());
-                CommonError::new(CommonErrorCode::UnexpectedDBError)
-            })
+                return Err(CommonError::new(CommonErrorCode::UnexpectedDBError));
+            }
+        };
+
+        // generate and store user's rsa key
+        let (private_pem, public_pem) = RsaKeyService::generate_key_pair();
+        let user_key_pair = user_rsa_key::ActiveModel {
+            user_id: Set(result.id.clone()),
+            private_key: Set(private_pem),
+            public_key: Set(public_pem),
+        };
+        match user_key_pair.insert(&self.db_conn).await {
+            Ok(_) => {}
+            Err(e) => {
+                log::error!("Unexpected DB Error: {}", e.to_string());
+                return Err(CommonError::new(CommonErrorCode::UnexpectedDBError));
+            }
+        }
+
+        Ok(result)
     }
 
     async fn list(&self) -> Result<Vec<User>, CommonError> {

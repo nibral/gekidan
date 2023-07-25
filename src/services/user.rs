@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use async_trait::async_trait;
-use crate::domain::error::{CommonError, CommonErrorCode};
+use crate::domain::error::CommonError;
 use crate::domain::models::user::{CreateUser, User};
 use crate::domain::repositories::user::UserRepository;
 use crate::domain::services::user::UserService;

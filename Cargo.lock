@@ -1086,6 +1086,7 @@ dependencies = [
  "log",
  "migrations",
  "once_cell",
+ "openssl",
  "sea-orm",
  "serde",
  "serde_json",
