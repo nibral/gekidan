@@ -30,6 +30,7 @@ impl CommonError {
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum CommonErrorCode {
     UserDoesNotExists,
+    UsernameAlreadyUsed,
     UnexpectedDBError,
 }
 
@@ -37,6 +38,7 @@ static COMMON_ERROR_MESSAGES: Lazy<Mutex<HashMap<CommonErrorCode, String>>> = La
     let mut m = HashMap::new();
 
     m.insert(UserDoesNotExists, "User does not exists".to_string());
+    m.insert(UsernameAlreadyUsed, "Username already used.".to_string());
     m.insert(UnexpectedDBError, "Unexpected DB Error".to_string());
 
     Mutex::new(m)

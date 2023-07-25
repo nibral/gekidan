@@ -21,6 +21,23 @@ impl UserSeaORMRepository {
 #[async_trait]
 impl UserRepository for UserSeaORMRepository {
     async fn create(&self, new_user: &User) -> Result<User, CommonError> {
+        let finder = user::Entity::find()
+            .filter(user::Column::Username.eq(new_user.username.clone()))
+            .one(&self.db_conn)
+            .await;
+        match finder {
+            Ok(r) => match r {
+                None => {}
+                Some(_) => {
+                    return Err(CommonError::new(CommonErrorCode::UsernameAlreadyUsed));
+                }
+            }
+            Err(e) => {
+                log::error!("Unexpected DB error in user search: {}", e.to_string());
+                return Err(CommonError::new(CommonErrorCode::UnexpectedDBError));
+            }
+        }
+
         let user = user::ActiveModel {
             id: Set(new_user.id.clone()),
             username: Set(new_user.username.clone()),
@@ -33,7 +50,7 @@ impl UserRepository for UserSeaORMRepository {
         let result: User = match user.insert(&self.db_conn).await {
             Ok(u) => u.into(),
             Err(e) => {
-                log::error!("Unexpected DB Error: {}", e.to_string());
+                log::error!("Unexpected DB error in user creation: {}", e.to_string());
                 return Err(CommonError::new(CommonErrorCode::UnexpectedDBError));
             }
         };
@@ -48,7 +65,7 @@ impl UserRepository for UserSeaORMRepository {
         match user_key_pair.insert(&self.db_conn).await {
             Ok(_) => {}
             Err(e) => {
-                log::error!("Unexpected DB Error: {}", e.to_string());
+                log::error!("Unexpected DB error in store rsa key pair: {}", e.to_string());
                 return Err(CommonError::new(CommonErrorCode::UnexpectedDBError));
             }
         }

@@ -19,7 +19,8 @@ impl std::fmt::Display for ApiError {
 impl actix_web::ResponseError for ApiError {
     fn error_response(&self) -> actix_web::HttpResponse {
         match self.0.get_code() {
-            CommonErrorCode::UserDoesNotExists => actix_web::HttpResponse::NotFound().body(""),
+            CommonErrorCode::UserDoesNotExists => actix_web::HttpResponse::NotFound().body(self.0.get_message()),
+            CommonErrorCode::UsernameAlreadyUsed => actix_web::HttpResponse::BadRequest().body(self.0.get_message()),
             CommonErrorCode::UnexpectedDBError => actix_web::HttpResponse::InternalServerError().body(""),
         }
     }
