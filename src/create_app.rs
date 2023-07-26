@@ -33,6 +33,7 @@ pub fn create_app() -> App<
         .service(
             web::scope("/.well-known")
                 .route("/host-meta", web::get().to(well_known_handlers::host_meta))
+                .route("/webfinger", web::get().to(well_known_handlers::web_finger))
                 .route("/nodeinfo", web::get().to(well_known_handlers::node_info_links))
         )
         .service(

@@ -35,8 +35,45 @@ impl ActivityPubService for ActivityPubServiceImpl {
         AP_HOST_META_TEMPLATE.replace("APP_URL", app_url).to_string()
     }
 
-    async fn web_finger(&self) -> String {
-        todo!()
+    async fn web_finger(&self, resource: String) -> Result<String, ()> {
+        let resource = if resource.starts_with("acct:") { &resource["acct:".len()..] } else { &resource };
+
+        // check format as "foo@fqdn"
+        let elem: Vec<&str> = resource.split("@").collect();
+        if elem.len() != 2 {
+            return Err(());
+        }
+
+        // check domain
+        let app_url_host = &self.app_config_service.get_app_config().app_url_host;
+        if elem[1] != app_url_host {
+            return Err(());
+        }
+
+        // return web finger
+        #[derive(Serialize)]
+        struct Links {
+            rel: String,
+            r#type: String,
+            href: String,
+        }
+        #[derive(Serialize)]
+        struct WebFinger {
+            subject: String,
+            links: Vec<Links>,
+        }
+
+        let app_url = &self.app_config_service.get_app_config().app_url;
+        Ok(json!(WebFinger{
+            subject: resource.to_string(),
+            links: vec![
+                Links {
+                    rel: "self".to_string(),
+                    r#type: "application/activity+json".to_string(),
+                    href: format!("{}{}", app_url, elem[0])
+                },
+            ]
+        }).to_string())
     }
 
     async fn node_info_links(&self) -> String {

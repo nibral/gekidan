@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use actix_web::{HttpResponse, Responder};
-use actix_web::web::Data;
+use actix_web::web::{Data, Query};
+use serde::Deserialize;
 use crate::container::Container;
 
 pub async fn host_meta(
@@ -10,6 +11,23 @@ pub async fn host_meta(
     HttpResponse::Ok()
         .content_type("application/xml")
         .body(body)
+}
+
+#[derive(Deserialize)]
+pub struct WebFingerQuery {
+    resource: String,
+}
+
+pub async fn web_finger(
+    container: Data<Arc<Container>>, query: Query<WebFingerQuery>,
+) -> impl Responder {
+    let resource = query.resource.clone();
+    match (&container.activity_pub_service).web_finger(resource).await {
+        Ok(body) => HttpResponse::Ok()
+            .content_type("application/jrd+json; charset=utf-8")
+            .body(body),
+        Err(_) => HttpResponse::NotFound().into(),
+    }
 }
 
 pub async fn node_info_links(
