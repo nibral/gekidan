@@ -10,6 +10,7 @@ use crate::services::app_config::AppConfigServiceImpl;
 use crate::services::user::UserServiceImpl;
 
 pub struct Container {
+    pub app_config_service: Arc<dyn AppConfigService>,
     pub activity_pub_service: Arc<dyn ActivityPubService>,
     pub user_service: Arc<dyn UserService>,
 }
@@ -25,7 +26,7 @@ impl Container {
 
         let activity_pub_service: Arc<dyn ActivityPubService> = Arc::new(
             ActivityPubServiceImpl {
-                app_config_service,
+                app_config_service: app_config_service.clone(),
                 user_repository: user_repository.clone(),
             }
         );
@@ -34,6 +35,7 @@ impl Container {
         );
 
         Container {
+            app_config_service,
             activity_pub_service,
             user_service,
         }

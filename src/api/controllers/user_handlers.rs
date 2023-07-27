@@ -1,10 +1,12 @@
 use std::sync::Arc;
 use actix_web::web::{Data, Json, Path};
 use crate::api::dto::user::{CreateUserDTO, ListUsersDTO, UserDTO};
+use crate::api::extractors::admin_claim::AdminClaim;
 use crate::container::Container;
 use crate::infrastructure::error::ApiError;
 
 pub async fn create_user_handler(
+    _admin_claim: AdminClaim,
     container: Data<Arc<Container>>, post_data: Json<CreateUserDTO>,
 ) -> Result<Json<UserDTO>, ApiError> {
     let user_service = &container.user_service;
@@ -13,7 +15,8 @@ pub async fn create_user_handler(
 }
 
 pub async fn list_users_handler(
-    container: Data<Arc<Container>>
+    _admin_claim: AdminClaim,
+    container: Data<Arc<Container>>,
 ) -> Result<Json<ListUsersDTO>, ApiError> {
     let user_service = &container.user_service;
     let users = user_service.list().await?;
@@ -21,6 +24,7 @@ pub async fn list_users_handler(
 }
 
 pub async fn get_user_handler(
+    _admin_claim: AdminClaim,
     container: Data<Arc<Container>>, params: Path<String>,
 ) -> Result<Json<UserDTO>, ApiError> {
     let user_service = &container.user_service;
@@ -29,6 +33,7 @@ pub async fn get_user_handler(
 }
 
 pub async fn delete_user_handler(
+    _admin_claim: AdminClaim,
     container: Data<Arc<Container>>, params: Path<String>,
 ) -> Result<String, ApiError> {
     let user_service = &container.user_service;

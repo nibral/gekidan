@@ -8,6 +8,10 @@ pub mod api {
     pub mod dto {
         pub mod user;
     }
+
+    pub mod extractors {
+        pub mod admin_claim;
+    }
 }
 
 mod domain {
