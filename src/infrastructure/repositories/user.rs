@@ -104,11 +104,19 @@ impl UserRepository for UserSeaORMRepository {
     }
 
     async fn delete(&self, user_id: String) -> Result<(), CommonError> {
+        match user_rsa_key::Entity::delete_by_id(&user_id).exec(&self.db_conn).await {
+            Ok(_) => {}
+            Err(e) => {
+                log::error!("Unexpected DB error in delete user key pair: {}", e.to_string());
+                return Err(CommonError::new(CommonErrorCode::UnexpectedDBError));
+            }
+        }
+
         user::Entity::delete_by_id(&user_id).exec(&self.db_conn)
             .await
             .map(|_| ())
             .map_err(|e| {
-                log::error!("Unexpected DB Error: {}", e.to_string());
+                log::error!("Unexpected DB error in user deletion: {}", e.to_string());
                 CommonError::new(CommonErrorCode::UnexpectedDBError)
             })
     }
@@ -127,7 +135,7 @@ impl UserRepository for UserSeaORMRepository {
             }
             Err(e) => {
                 log::error!("Unexpected DB Error: {}", e.to_string());
-                return Err(CommonError::new(CommonErrorCode::UnexpectedDBError))
+                return Err(CommonError::new(CommonErrorCode::UnexpectedDBError));
             }
         };
 
