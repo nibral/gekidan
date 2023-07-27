@@ -141,3 +141,87 @@ impl ActivityPubService for ActivityPubServiceImpl {
         json!(info).to_string()
     }
 }
+
+#[cfg(test)]
+mod test {
+    use std::sync::Arc;
+    use async_trait::async_trait;
+    use crate::domain::error::CommonError;
+    use crate::domain::models::app_config::AppConfig;
+    use crate::domain::models::user::User;
+    use crate::domain::models::user_rsa_key::UserRsaKey;
+    use crate::domain::repositories::user::UserRepository;
+    use crate::domain::services::activity_pub::ActivityPubService;
+    use crate::domain::services::app_config::AppConfigService;
+    use crate::services::activity_pub::ActivityPubServiceImpl;
+
+    struct MockAppConfigService {
+        app_config: AppConfig,
+    }
+
+    impl MockAppConfigService {
+        fn new() -> Self {
+            MockAppConfigService {
+                app_config: AppConfig {
+                    app_url: "http://test.example.com/".to_string(),
+                    app_url_host: "test.example.com".to_string(),
+                }
+            }
+        }
+    }
+
+    impl AppConfigService for MockAppConfigService {
+        fn get_app_config(&self) -> &AppConfig {
+            &self.app_config
+        }
+    }
+
+    struct MockUserRepository {}
+
+    #[async_trait]
+    impl UserRepository for MockUserRepository {
+        async fn create(&self, _new_user: &User) -> Result<User, CommonError> {
+            todo!()
+        }
+
+        async fn list(&self) -> Result<Vec<User>, CommonError> {
+            todo!()
+        }
+
+        async fn get(&self, _user_id: String) -> Result<User, CommonError> {
+            todo!()
+        }
+
+        async fn delete(&self, _user_id: String) -> Result<(), CommonError> {
+            todo!()
+        }
+
+        async fn find_by_username_with_rsa_key(&self, _username: String) -> Result<(User, UserRsaKey), CommonError> {
+            todo!()
+        }
+    }
+
+    #[actix_web::test]
+    async fn web_finger() {
+        let service = ActivityPubServiceImpl {
+            app_config_service: Arc::new(MockAppConfigService::new()),
+            user_repository: Arc::new(MockUserRepository {}),
+        };
+
+        assert!(
+            service.web_finger("acct:hoge@test.example.com".to_string()).await.is_ok()
+        );
+        assert!(
+            service.web_finger("hoge@test.example.com".to_string()).await.is_ok()
+        );
+        assert!(
+            service.web_finger("hoge@example.com".to_string()).await.is_err()
+        );
+        assert!(
+            service.web_finger("hogehoge".to_string()).await.is_err()
+        );
+        assert!(
+            service.web_finger("".to_string()).await.is_err()
+        );
+    }
+}
