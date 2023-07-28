@@ -72,5 +72,11 @@ mod test_user_handler {
         assert!(res.status().is_success());
         let body: ListUsersDTO = test::read_body_json(res).await;
         assert_eq!(body.users.len(), 0);
+
+        // list without admin api-key (fail)
+        let res = test::TestRequest::get().uri("/admin/users")
+            .send_request(&app)
+            .await;
+        assert!(!res.status().is_success());
     }
 }
