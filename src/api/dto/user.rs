@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use crate::domain::models::user::{CreateUser, User};
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct UserDTO {
     pub id: String,
     pub username: String,
@@ -14,7 +14,7 @@ pub struct CreateUserDTO {
     pub display_name: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ListUsersDTO {
     pub users: Vec<UserDTO>,
 }
