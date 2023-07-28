@@ -165,6 +165,7 @@ mod test {
                 app_config: AppConfig {
                     app_url: "http://test.example.com/".to_string(),
                     app_url_host: "test.example.com".to_string(),
+                    admin_api_key: "IamAdmin1234".to_string(),
                 }
             }
         }

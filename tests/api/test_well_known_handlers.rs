@@ -16,6 +16,14 @@ mod test_well_known_handler {
         assert!(res.status().is_success());
         assert_eq!(res.headers().get("Content-Type").unwrap().to_str().unwrap(), "application/xml");
 
+        // webfinger
+        let res = test::TestRequest::get()
+            .uri("/.well-known/webfinger?resource=acct:hoge@test.example.com")
+            .send_request(&app)
+            .await;
+        assert!(res.status().is_success());
+        assert_eq!(res.headers().get("Content-Type").unwrap().to_str().unwrap(), "application/jrd+json; charset=utf-8");
+
         // nodeinfo links
         #[derive(Deserialize)]
         struct NodeInfoLinks {
