@@ -1,16 +1,17 @@
 #[cfg(test)]
-mod test_user_handler {
+mod test_user_management_controller {
+    use std::env;
     use actix_web::test;
-    use sea_orm::Database;
-    use gekidan::api::dto::user::{ListUsersDTO, UserDTO};
-    use gekidan::create_app::create_app;
+    use gekidan::app::factory::create_app;
+    use gekidan::presentation::controllers::user_management::{UserListResponse, UserResponse};
     use migrations::{Migrator, MigratorTrait};
+    use sea_orm::Database;
 
     #[actix_web::test]
     async fn test() {
         let _ = env_logger::try_init();
 
-        dotenv::from_filename(".env.test").ok();
+        env::set_var("ENV", "test");
         let app = test::init_service(create_app()).await;
 
         // setup database
@@ -18,7 +19,7 @@ mod test_user_handler {
         let _ = Migrator::fresh(&db).await;
 
         // auth header
-        let api_key = ("x-api-key", "IamAdmin1234");
+        let api_key = ("x-api-key", dotenv::var("ADMIN_API_KEY").unwrap());
 
         // list
         let res = test::TestRequest::get().uri("/admin/users")
@@ -26,7 +27,7 @@ mod test_user_handler {
             .send_request(&app)
             .await;
         assert!(res.status().is_success());
-        let body: ListUsersDTO = test::read_body_json(res).await;
+        let body: UserListResponse = test::read_body_json(res).await;
         assert_eq!(body.users.len(), 0);
 
         // add
@@ -44,7 +45,7 @@ mod test_user_handler {
             .send_request(&app)
             .await;
         assert!(res.status().is_success());
-        let body: ListUsersDTO = test::read_body_json(res).await;
+        let body: UserListResponse = test::read_body_json(res).await;
         assert_eq!(body.users.len(), 1);
         let uid = body.users[0].id.clone();
 
@@ -54,7 +55,7 @@ mod test_user_handler {
             .send_request(&app)
             .await;
         assert!(res.status().is_success());
-        let body: UserDTO = test::read_body_json(res).await;
+        let body: UserResponse = test::read_body_json(res).await;
         assert_eq!(body.username, "hoge");
 
         // delete
@@ -70,7 +71,7 @@ mod test_user_handler {
             .send_request(&app)
             .await;
         assert!(res.status().is_success());
-        let body: ListUsersDTO = test::read_body_json(res).await;
+        let body: UserListResponse = test::read_body_json(res).await;
         assert_eq!(body.users.len(), 0);
 
         // list without admin api-key (fail)

@@ -1,15 +1,16 @@
 #[cfg(test)]
-mod test_well_known_handler {
+mod test_activity_pub_controller {
+    use std::env;
     use actix_web::test;
     use serde::Deserialize;
-    use gekidan::create_app::create_app;
+    use gekidan::app::factory::create_app;
 
     #[actix_web::test]
     async fn test() {
         let _ = env_logger::try_init();
 
-        dotenv::from_filename(".env.test").ok();
-        let app = test::init_service(create_app()).await;
+        env::set_var("ENV", "test");
+        let appA = test::init_service(create_app()).await;
 
         // host-meta
         let res = test::TestRequest::get().uri("/.well-known/host-meta").send_request(&app).await;
@@ -26,14 +27,18 @@ mod test_well_known_handler {
 
         // nodeinfo links
         #[derive(Deserialize)]
-        struct NodeInfoLinks {
+        struct NodeInfoLinkItem {
             rel: String,
+        }
+        #[derive(Deserialize)]
+        struct NodeInfoLinks {
+            links: Vec<NodeInfoLinkItem>,
         }
         let res = test::TestRequest::get().uri("/.well-known/nodeinfo").send_request(&app).await;
         assert!(res.status().is_success());
         assert_eq!(res.headers().get("Content-Type").unwrap().to_str().unwrap(), "application/json");
         let body: NodeInfoLinks = test::read_body_json(res).await;
-        assert_eq!(body.rel, "http://nodeinfo.diaspora.software/ns/schema/2.1");
+        assert_eq!(body.links[0].rel, "http://nodeinfo.diaspora.software/ns/schema/2.1");
 
         // nodeinfo
         #[derive(Deserialize)]

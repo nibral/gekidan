@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
-use crate::domain::error::CommonErrorCode::*;
+use crate::domain::error::CommonErrorCode::{DBError, UnexpectedError, UserDoesNotExists, UsernameAlreadyExists};
 
 #[derive(Debug)]
 pub struct CommonError {
@@ -11,7 +11,9 @@ pub struct CommonError {
 
 impl CommonError {
     pub fn new(code: CommonErrorCode) -> CommonError {
-        let message = COMMON_ERROR_MESSAGES.lock().unwrap().get(&code).unwrap().to_string();
+        let message = COMMON_ERROR_MESSAGES.lock().unwrap()
+            .get(&code).unwrap()
+            .to_string();
         CommonError {
             code,
             message,
@@ -23,23 +25,25 @@ impl CommonError {
     }
 
     pub fn get_message(&self) -> String {
-        self.message.to_string()
+        self.message.clone()
     }
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum CommonErrorCode {
     UserDoesNotExists,
-    UsernameAlreadyUsed,
-    UnexpectedDBError,
+    UsernameAlreadyExists,
+    DBError,
+    UnexpectedError,
 }
 
 static COMMON_ERROR_MESSAGES: Lazy<Mutex<HashMap<CommonErrorCode, String>>> = Lazy::new(|| {
     let mut m = HashMap::new();
 
     m.insert(UserDoesNotExists, "User does not exists".to_string());
-    m.insert(UsernameAlreadyUsed, "Username already used.".to_string());
-    m.insert(UnexpectedDBError, "Unexpected DB Error".to_string());
+    m.insert(UsernameAlreadyExists, "Username already exists".to_string());
+    m.insert(DBError, "DB error".to_string());
+    m.insert(UnexpectedError, "Unexpected error".to_string());
 
     Mutex::new(m)
 });
@@ -49,8 +53,8 @@ mod tests {
     use crate::domain::error::{CommonError, CommonErrorCode};
 
     #[test]
-    fn get_error_message_from_code() {
-        let err = CommonError::new(CommonErrorCode::UnexpectedDBError);
-        assert_eq!(err.get_message(), "Unexpected DB Error");
+    fn get_message_from_code() {
+        let err = CommonError::new(CommonErrorCode::UnexpectedError);
+        assert_eq!(err.get_message(), "Unexpected error");
     }
 }

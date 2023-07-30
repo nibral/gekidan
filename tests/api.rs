@@ -1,5 +1,5 @@
 mod api {
-    mod test_root_handlers;
-    mod test_user_handler;
-    mod test_well_known_handlers;
+    mod test_echo_controller;
+    mod test_user_management_controller;
+    mod test_activity_pub_controller;
 }

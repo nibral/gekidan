@@ -1,14 +1,15 @@
 #[cfg(test)]
-mod test_root_handlers {
+mod test_echo_controller {
+    use std::env;
     use std::str::from_utf8;
     use actix_web::test;
-    use gekidan::create_app::create_app;
+    use gekidan::app::factory::create_app;
 
     #[actix_web::test]
     async fn test() {
         let _ = env_logger::try_init();
 
-        dotenv::from_filename(".env.test").ok();
+        env::set_var("ENV", "test");
         let app = test::init_service(create_app()).await;
 
         let res = test::TestRequest::get().uri("/").send_request(&app).await;

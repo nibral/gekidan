@@ -5,7 +5,7 @@ use actix_web::{Error, FromRequest, HttpRequest};
 use actix_web::dev::Payload;
 use actix_web::error::ErrorUnauthorized;
 use actix_web::web::Data;
-use crate::container::Container;
+use crate::app::container::Container;
 
 pub struct AdminClaim;
 
@@ -14,11 +14,11 @@ impl FromRequest for AdminClaim {
     type Future = Pin<Box<dyn Future<Output=Result<Self, Self::Error>>>>;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
-        let container = req.app_data::<Data<Arc<Container>>>().unwrap().clone();
-        let correct = container.app_config_service.get_app_config().admin_api_key.clone();
+        let container = req.app_data::<Data<Arc<Container>>>().unwrap();
+        let correct = (&container.app_config.admin_api_key).clone();
         let challenge = match get_api_key(req) {
             Some(v) => v.to_string(),
-            None => "".to_string(),
+            None => "".to_string()
         };
 
         Box::pin(async move {

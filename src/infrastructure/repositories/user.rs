@@ -1,127 +1,117 @@
 use async_trait::async_trait;
-use sea_orm::ActiveValue::Set;
 use sea_orm::{ActiveModelTrait, DbConn};
 use sea_orm::prelude::*;
 use crate::domain::error::{CommonError, CommonErrorCode};
-use crate::domain::models::user::User;
-use crate::domain::models::user_rsa_key::UserRsaKey;
-use crate::domain::repositories::user::UserRepository;
-use crate::domain::services::rsa_key::RsaKeyService;
-use crate::infrastructure::entities::{user, user_rsa_key};
+use crate::domain::user::user::{User};
+use crate::domain::user::user_repository::UserRepository;
+use crate::infrastructure::databases::converters::user::restore;
+use crate::infrastructure::databases::entities::{user, user_rsa_key};
 
 pub struct UserSeaORMRepository {
-    pub db_conn: DbConn,
+    db_conn: DbConn,
 }
 
 impl UserSeaORMRepository {
     pub fn new(db_conn: DbConn) -> Self {
-        UserSeaORMRepository { db_conn }
+        UserSeaORMRepository {
+            db_conn
+        }
     }
 }
 
 #[async_trait]
 impl UserRepository for UserSeaORMRepository {
-    async fn create(&self, new_user: &User) -> Result<User, CommonError> {
-        let finder = user::Entity::find()
-            .filter(user::Column::Username.eq(new_user.username.clone()))
-            .one(&self.db_conn)
-            .await;
-        match finder {
-            Ok(r) => match r {
-                None => {}
-                Some(_) => {
-                    return Err(CommonError::new(CommonErrorCode::UsernameAlreadyUsed));
-                }
-            }
-            Err(e) => {
-                log::error!("Unexpected DB error in user search: {}", e.to_string());
-                return Err(CommonError::new(CommonErrorCode::UnexpectedDBError));
-            }
-        }
-
-        let user = user::ActiveModel {
-            id: Set(new_user.id.clone()),
-            username: Set(new_user.username.clone()),
-            display_name: Set(new_user.display_name.clone()),
-            created_at: Set(new_user.created_at.clone()),
-            updated_at: Set(new_user.updated_at.clone()),
-        };
-
-        // add user
-        let result: User = match user.insert(&self.db_conn).await {
-            Ok(u) => u.into(),
-            Err(e) => {
-                log::error!("Unexpected DB error in user creation: {}", e.to_string());
-                return Err(CommonError::new(CommonErrorCode::UnexpectedDBError));
-            }
-        };
-
-        // generate and store user's rsa key
-        let (private_pem, public_pem) = RsaKeyService::generate_key_pair();
-        let user_key_pair = user_rsa_key::ActiveModel {
-            user_id: Set(result.id.clone()),
-            private_key: Set(private_pem),
-            public_key: Set(public_pem),
-        };
-        match user_key_pair.insert(&self.db_conn).await {
+    async fn add(&self, new_user: &User) -> Result<(), CommonError> {
+        match user::ActiveModel::from(new_user).insert(&self.db_conn).await {
             Ok(_) => {}
             Err(e) => {
-                log::error!("Unexpected DB error in store rsa key pair: {}", e.to_string());
-                return Err(CommonError::new(CommonErrorCode::UnexpectedDBError));
+                log::error!("Failed to insert user: {}", e.to_string());
+                return Err(CommonError::new(CommonErrorCode::DBError));
+            }
+        };
+
+        match user_rsa_key::ActiveModel::from(new_user).insert(&self.db_conn).await {
+            Ok(_) => {}
+            Err(e) => {
+                log::error!("Failed to insert user rsa key: {}", e.to_string());
+                return Err(CommonError::new(CommonErrorCode::DBError));
             }
         }
 
-        Ok(result)
+        Ok(())
     }
 
     async fn list(&self) -> Result<Vec<User>, CommonError> {
-        user::Entity::find().all(&self.db_conn)
-            .await
-            .map(|l| l.iter()
-                .map(|u| -> User { u.clone().into() })
-                .collect()
-            )
-            .map_err(|e| {
-                log::error!("Unexpected DB Error: {}", e.to_string());
-                CommonError::new(CommonErrorCode::UnexpectedDBError)
+        let result = user::Entity::find()
+            .find_also_related(user_rsa_key::Entity)
+            .all(&self.db_conn)
+            .await;
+        let users = match result {
+            Ok(l) => l,
+            Err(e) => {
+                log::error!("Failed to list users: {}", e);
+                return Err(CommonError::new(CommonErrorCode::DBError));
+            }
+        };
+        users.iter()
+            .map(|(u, k)| -> Result<User, CommonError> {
+                let key_pair = match k {
+                    Some(rsa) => rsa,
+                    None => {
+                        log::error!("User rsa key does not exists");
+                        return Err(CommonError::new(CommonErrorCode::UnexpectedError));
+                    }
+                };
+                Ok(restore(u, key_pair))
             })
+            .collect()
     }
 
-    async fn get(&self, user_id: String) -> Result<User, CommonError> {
-        let result = user::Entity::find_by_id(&user_id).one(&self.db_conn)
+    async fn get(&self, user_id: &str) -> Result<User, CommonError> {
+        let result = user::Entity::find_by_id(user_id)
+            .find_also_related(user_rsa_key::Entity)
+            .one(&self.db_conn)
             .await;
 
-        match result {
-            Ok(user) => match user {
-                Some(u) => Ok(u.into()),
-                _ => Err(CommonError::new(CommonErrorCode::UserDoesNotExists)),
-            },
+        let (user, key_pair) = match result {
+            Ok(u) => match u {
+                Some(p) => p,
+                None => return Err(CommonError::new(CommonErrorCode::UserDoesNotExists)),
+            }
             Err(e) => {
-                log::error!("Unexpected DB Error: {}", e.to_string());
-                Err(CommonError::new(CommonErrorCode::UnexpectedDBError))
+                log::error!("Failed to get user: {}", e.to_string());
+                return Err(CommonError::new(CommonErrorCode::DBError));
+            }
+        };
+
+        match key_pair {
+            Some(k) => Ok(restore(&user, &k)),
+            None => {
+                log::error!("User rsa key does not exists");
+                return Err(CommonError::new(CommonErrorCode::UnexpectedError));
             }
         }
     }
 
-    async fn delete(&self, user_id: String) -> Result<(), CommonError> {
-        match user_rsa_key::Entity::delete_by_id(&user_id).exec(&self.db_conn).await {
+    async fn delete(&self, user_id: &str) -> Result<(), CommonError> {
+        match user_rsa_key::Entity::delete_by_id(user_id).exec(&self.db_conn).await {
             Ok(_) => {}
             Err(e) => {
-                log::error!("Unexpected DB error in delete user key pair: {}", e.to_string());
-                return Err(CommonError::new(CommonErrorCode::UnexpectedDBError));
+                log::error!("Failed to delete user rsa key: {}", e.to_string());
+                return Err(CommonError::new(CommonErrorCode::DBError));
             }
         }
 
-        user::Entity::delete_by_id(&user_id).exec(&self.db_conn)
+        user::Entity::delete_by_id(user_id).exec(&self.db_conn)
             .await
             .map(|_| ())
             .map_err(|e| {
-                log::error!("Unexpected DB error in user deletion: {}", e.to_string());
-                CommonError::new(CommonErrorCode::UnexpectedDBError)
+                log::error!("Failed to delete user: {}", e.to_string());
+                CommonError::new(CommonErrorCode::DBError)
             })
     }
 
-    async fn find_by_username_with_rsa_key(&self, username: String) -> Result<(User, UserRsaKey), CommonError> {
+    async fn find(&self, username: &str) -> Result<Option<User>, CommonError> {
         let result = user::Entity::find()
             .find_also_related(user_rsa_key::Entity)
             .filter(user::Column::Username.eq(username))
@@ -130,20 +120,20 @@ impl UserRepository for UserSeaORMRepository {
 
         let (user, key_pair) = match result {
             Ok(u) => match u {
-                Some(pair) => pair,
-                _ => return Err(CommonError::new(CommonErrorCode::UserDoesNotExists))
+                Some(p) => p,
+                None => return Ok(None),
             }
             Err(e) => {
-                log::error!("Unexpected DB Error: {}", e.to_string());
-                return Err(CommonError::new(CommonErrorCode::UnexpectedDBError));
+                log::error!("Failed to find user: {}", e.to_string());
+                return Err(CommonError::new(CommonErrorCode::DBError));
             }
         };
 
         match key_pair {
-            Some(k) => Ok((user.into(), k.into())),
-            _ => {
-                log::error!("Unexpected DB state: user rsa key pair not found");
-                Err(CommonError::new(CommonErrorCode::UserDoesNotExists))
+            Some(k) => Ok(Some(restore(&user, &k))),
+            None => {
+                log::error!("User rsa key does not exists");
+                return Err(CommonError::new(CommonErrorCode::UnexpectedError));
             }
         }
     }
