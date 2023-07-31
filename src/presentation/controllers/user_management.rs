@@ -5,7 +5,7 @@ use crate::app::container::Container;
 use crate::domain::user::user::User;
 use crate::presentation::errors::api::ApiError;
 use crate::presentation::extractors::admin_claim::AdminClaim;
-use crate::usecase::user_management::CreateUserParams;
+use crate::usecase::user_management::{CreateUserParams, UpdateUserParams};
 
 pub async fn create_user(
     _: AdminClaim,
@@ -33,6 +33,20 @@ pub async fn get_user(
 ) -> Result<Json<UserResponse>, ApiError> {
     let usecase = &container.user_management_usecase;
     let user = usecase.get(&params.into_inner()).await?;
+    Ok(Json(user.into()))
+}
+
+pub async fn update_user(
+    _: AdminClaim,
+    containar: Data<Arc<Container>>,
+    params: Path<String>,
+    post_data: Json<UpdateUserRequest>,
+) -> Result<Json<UserResponse>, ApiError> {
+    let usecase = &containar.user_management_usecase;
+    let user = usecase.update(
+        &params.into_inner(),
+        &post_data.into_inner().into(),
+    ).await?;
     Ok(Json(user.into()))
 }
 
@@ -85,6 +99,21 @@ pub struct CreateUserRequest {
 impl Into<CreateUserParams> for CreateUserRequest {
     fn into(self) -> CreateUserParams {
         CreateUserParams {
+            username: self.username,
+            display_name: self.display_name,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct UpdateUserRequest {
+    pub username: String,
+    pub display_name: String,
+}
+
+impl Into<UpdateUserParams> for UpdateUserRequest {
+    fn into(self) -> UpdateUserParams {
+        UpdateUserParams {
             username: self.username,
             display_name: self.display_name,
         }

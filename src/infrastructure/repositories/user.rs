@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use sea_orm::{ActiveModelTrait, DbConn};
+use sea_orm::ActiveValue::Set;
 use sea_orm::prelude::*;
 use crate::domain::error::{CommonError, CommonErrorCode};
 use crate::domain::user::user::{User};
@@ -89,6 +90,37 @@ impl UserRepository for UserSeaORMRepository {
             None => {
                 log::error!("User rsa key does not exists");
                 return Err(CommonError::new(CommonErrorCode::UnexpectedError));
+            }
+        }
+    }
+
+    async fn update(&self, user: &User) -> Result<(), CommonError> {
+        let target = match user::Entity::find_by_id(&user.id).one(&self.db_conn).await {
+            Ok(r) => match r {
+                Some(t) => t,
+                None => {
+                    log::error!("Specified user does not exists");
+                    return Err(CommonError::new(CommonErrorCode::UnexpectedError));
+                }
+            },
+            Err(e) => {
+                log::error!("Failed to get user: {}", e.to_string());
+                return Err(CommonError::new(CommonErrorCode::DBError));
+            }
+        };
+        let mut target: user::ActiveModel = target.into();
+
+        // set all columns
+        target.username = Set((&user.username).clone());
+        target.display_name = Set((&user.display_name).clone());
+        target.updated_at = Set((&user.updated_at).clone());
+
+        // update
+        match target.update(&self.db_conn).await {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                log::error!("Failed to update user: {}", e.to_string());
+                return Err(CommonError::new(CommonErrorCode::DBError));
             }
         }
     }

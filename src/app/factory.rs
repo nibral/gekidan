@@ -46,6 +46,7 @@ pub fn create_app() -> App<
                         .route("", web::post().to(user_management::create_user))
                         .route("", web::get().to(user_management::list_users))
                         .route("/{user_id}", web::get().to(user_management::get_user))
+                        .route("/{user_id}", web::put().to(user_management::update_user))
                         .route("/{user_id}", web::delete().to(user_management::delete_user))
                 )
         )
