@@ -106,6 +106,10 @@ mod test {
             todo!()
         }
 
+        async fn update(&self, _user: &User) -> Result<(), CommonError> {
+            todo!()
+        }
+
         async fn delete(&self, _user_id: &str) -> Result<(), CommonError> {
             todo!()
         }
