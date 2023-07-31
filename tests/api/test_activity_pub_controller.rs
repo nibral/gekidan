@@ -10,7 +10,7 @@ mod test_activity_pub_controller {
         let _ = env_logger::try_init();
 
         env::set_var("ENV", "test");
-        let appA = test::init_service(create_app()).await;
+        let app = test::init_service(create_app()).await;
 
         // host-meta
         let res = test::TestRequest::get().uri("/.well-known/host-meta").send_request(&app).await;

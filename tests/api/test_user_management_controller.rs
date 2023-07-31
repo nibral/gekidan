@@ -19,7 +19,7 @@ mod test_user_management_controller {
         let _ = Migrator::fresh(&db).await;
 
         // auth header
-        let api_key = ("x-api-key", dotenv::var("ADMIN_API_KEY").unwrap());
+        let api_key = ("x-admin-api-key", dotenv::var("ADMIN_API_KEY").unwrap());
 
         // list
         let res = test::TestRequest::get().uri("/admin/users")

@@ -32,5 +32,5 @@ impl FromRequest for AdminClaim {
 }
 
 fn get_api_key(req: &HttpRequest) -> Option<&str> {
-    req.headers().get("x-api-key")?.to_str().ok()
+    req.headers().get("x-admin-api-key")?.to_str().ok()
 }
