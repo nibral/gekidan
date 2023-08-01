@@ -4,7 +4,8 @@ use openssl::hash::MessageDigest;
 use openssl::pkey::{PKey, Private, Public};
 use openssl::rsa::{Padding, Rsa};
 use openssl::sign::Signer;
-use ulid::Ulid;
+use crate::domain::id_generator::IDGenerator;
+
 
 #[derive(Clone)]
 pub struct User {
@@ -24,7 +25,7 @@ pub struct UserRsaKey {
 
 impl User {
     pub fn new(username: &str, display_name: &str) -> Self {
-        let id = Ulid::new().to_string();
+        let id = IDGenerator::generate(8);
         let now = Utc::now();
 
         // generate rsa key pair

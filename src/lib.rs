@@ -18,6 +18,7 @@ pub mod domain {
     pub mod app_config;
     pub mod constants;
     pub mod error;
+    pub mod id_generator;
 }
 
 pub mod infrastructure {
