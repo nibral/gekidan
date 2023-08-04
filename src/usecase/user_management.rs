@@ -68,7 +68,7 @@ impl UserManagementUseCase {
         // update
         user.username = params.username.clone();
         user.display_name = params.display_name.clone();
-        user.updated_at = Utc::now().to_rfc3339();
+        user.updated_at = Utc::now();
         match self.user_repository.update(&user).await {
             Ok(_) => {}
             Err(e) => return Err(e)

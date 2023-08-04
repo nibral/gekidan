@@ -50,4 +50,17 @@ pub fn create_app() -> App<
                         .route("/{user_id}", web::delete().to(user_management::delete_user))
                 )
         )
+        .service(
+            web::scope("/users/{user_id}")
+                .service(
+                    web::scope("/notes")
+                        .route("", web::post().to(user_note::create_user_note))
+                        .route("", web::get().to(user_note::list_notes))
+                        .route("/{note_id}", web::get().to(echo::echo_ok))
+                        .route("/{note_id}", web::delete().to(echo::echo_ok))
+                )
+                .route("", web::get().to(echo::echo_ok))
+                .route("/inbox", web::get().to(echo::echo_ok))
+                .route("/outbox", web::get().to(echo::echo_ok))
+        )
 }

@@ -1,5 +1,5 @@
 use base64::{Engine as _, engine::general_purpose};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use openssl::hash::MessageDigest;
 use openssl::pkey::{PKey, Private, Public};
 use openssl::rsa::{Padding, Rsa};
@@ -7,17 +7,17 @@ use openssl::sign::Signer;
 use crate::domain::id_generator::IDGenerator;
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct User {
     pub id: String,
     pub username: String,
     pub display_name: String,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
     pub key_pair: UserRsaKey,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct UserRsaKey {
     pub private_key: PKey<Private>,
     pub public_key: PKey<Public>,
@@ -39,8 +39,8 @@ impl User {
             id,
             username: username.to_string(),
             display_name: display_name.to_string(),
-            created_at: now.clone().to_rfc3339(),
-            updated_at: now.clone().to_rfc3339(),
+            created_at: now.clone(),
+            updated_at: now.clone(),
             key_pair,
         }
     }
@@ -70,8 +70,6 @@ mod test {
         assert_ne!(user.id, "");
         assert_eq!(user.username, "john");
         assert_eq!(user.display_name, "John Doe");
-        assert_ne!(user.created_at, "");
-        assert_ne!(user.updated_at, "");
 
         // check key pair
         let data = b"hello, world!";

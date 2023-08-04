@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use openssl::pkey::PKey;
 use sea_orm::ActiveValue::Set;
 use crate::domain::user::user::{User, UserRsaKey};
@@ -9,8 +10,8 @@ impl From<&User> for user::ActiveModel {
             id: Set(user.id.clone()),
             username: Set(user.username.clone()),
             display_name: Set(user.display_name.clone()),
-            created_at: Set(user.created_at.clone()),
-            updated_at: Set(user.updated_at.clone()),
+            created_at: Set(user.created_at.to_rfc3339()),
+            updated_at: Set(user.updated_at.to_rfc3339()),
         }
     }
 }
@@ -42,8 +43,8 @@ pub fn restore(user: &user::Model, key_pair: &user_rsa_key::Model) -> User {
         id: user.id.clone(),
         username: user.username.clone(),
         display_name: user.display_name.clone(),
-        created_at: user.created_at.clone(),
-        updated_at: user.updated_at.clone(),
+        created_at: DateTime::parse_from_rfc3339(&user.created_at).unwrap().with_timezone(&Utc),
+        updated_at: DateTime::parse_from_rfc3339(&user.updated_at).unwrap().with_timezone(&Utc),
         key_pair: (*key_pair).clone().into(),
     }
 }

@@ -9,6 +9,11 @@ pub mod domain {
         pub mod activity_pub_service;
     }
 
+    pub mod note {
+        pub mod note;
+        pub mod note_repository;
+    }
+
     pub mod user {
         pub mod user;
         pub mod user_repository;
@@ -28,6 +33,7 @@ pub mod infrastructure {
 
     pub mod databases {
         pub mod converters {
+            pub mod note;
             pub mod user;
         }
 
@@ -35,6 +41,7 @@ pub mod infrastructure {
     }
 
     pub mod repositories {
+        pub mod note;
         pub mod user;
     }
 }
@@ -43,6 +50,7 @@ pub mod presentation {
     pub mod controllers {
         pub mod activity_pub;
         pub mod echo;
+        pub mod user_note;
         pub mod user_management;
     }
 
@@ -57,5 +65,6 @@ pub mod presentation {
 
 pub mod usecase {
     pub mod activity_pub;
+    pub mod user_note;
     pub mod user_management;
 }

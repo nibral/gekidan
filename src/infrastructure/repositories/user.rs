@@ -113,7 +113,7 @@ impl UserRepository for UserSeaORMRepository {
         // set all columns
         target.username = Set((&user.username).clone());
         target.display_name = Set((&user.display_name).clone());
-        target.updated_at = Set((&user.updated_at).clone());
+        target.updated_at = Set((&user.updated_at).to_rfc3339());
 
         // update
         match target.update(&self.db_conn).await {

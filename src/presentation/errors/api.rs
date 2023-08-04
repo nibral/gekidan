@@ -23,6 +23,7 @@ impl actix_web::ResponseError for ApiError {
         match self.0.get_code() {
             CommonErrorCode::UserDoesNotExists => HttpResponse::NotFound().body(self.0.get_message()),
             CommonErrorCode::UsernameAlreadyExists => HttpResponse::BadRequest().body(self.0.get_message()),
+            CommonErrorCode::NoteDoesNotExists => HttpResponse::NotFound().body(self.0.get_message()),
             CommonErrorCode::DBError => HttpResponse::InternalServerError().body(""),
             CommonErrorCode::UnexpectedError => HttpResponse::InternalServerError().body(""),
         }

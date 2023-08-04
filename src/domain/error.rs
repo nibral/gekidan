@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
-use crate::domain::error::CommonErrorCode::{DBError, UnexpectedError, UserDoesNotExists, UsernameAlreadyExists};
+use crate::domain::error::CommonErrorCode::{DBError, NoteDoesNotExists, UnexpectedError, UserDoesNotExists, UsernameAlreadyExists};
 
 #[derive(Debug)]
 pub struct CommonError {
@@ -33,6 +33,7 @@ impl CommonError {
 pub enum CommonErrorCode {
     UserDoesNotExists,
     UsernameAlreadyExists,
+    NoteDoesNotExists,
     DBError,
     UnexpectedError,
 }
@@ -42,6 +43,7 @@ static COMMON_ERROR_MESSAGES: Lazy<Mutex<HashMap<CommonErrorCode, String>>> = La
 
     m.insert(UserDoesNotExists, "User does not exists".to_string());
     m.insert(UsernameAlreadyExists, "Username already exists".to_string());
+    m.insert(NoteDoesNotExists, "Note does not exists".to_string());
     m.insert(DBError, "DB error".to_string());
     m.insert(UnexpectedError, "Unexpected error".to_string());
 
