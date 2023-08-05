@@ -37,6 +37,7 @@ mod test_user_note_controller {
             .await;
         assert!(res.status().is_success());
         let body: UserNoteListResponse = test::read_body_json(res).await;
+        assert_eq!(body.total, 0);
         assert_eq!(body.notes.len(), 0);
 
         // add
@@ -66,6 +67,7 @@ mod test_user_note_controller {
             .await;
         assert!(res.status().is_success());
         let body: UserNoteListResponse = test::read_body_json(res).await;
+        assert_eq!(body.total, 2);
         assert_eq!(body.notes.len(), 2);
 
         // get
@@ -88,6 +90,7 @@ mod test_user_note_controller {
             .await;
         assert!(res.status().is_success());
         let body: UserNoteListResponse = test::read_body_json(res).await;
+        assert_eq!(body.total, 1);
         assert_eq!(body.notes.len(), 1);
     }
 }

@@ -1,8 +1,9 @@
 use std::sync::Arc;
-use actix_web::web::{Data, Json, Path};
+use actix_web::web::{Data, Json, Path, Query};
 use serde::{Deserialize, Serialize};
 use crate::app::container::Container;
 use crate::domain::note::note::Note;
+use crate::domain::note::paging::{NotesPage, NotesPagingParams};
 use crate::presentation::errors::api::ApiError;
 
 pub async fn create_user_note(
@@ -19,9 +20,10 @@ pub async fn create_user_note(
 pub async fn list_user_notes(
     container: Data<Arc<Container>>,
     params: Path<String>,
+    queries: Query<UserNoteListQuery>,
 ) -> Result<Json<UserNoteListResponse>, ApiError> {
     let usecase = &container.user_note_usecase;
-    let notes = usecase.list(&params.into_inner()).await?;
+    let notes = usecase.list(&params.into_inner(), &queries.into_inner().into()).await?;
     Ok(Json(UserNoteListResponse::from(notes)))
 }
 
@@ -70,14 +72,31 @@ pub struct CreateUserNoteRequest {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct UserNoteListQuery {
+    pub offset: Option<u64>,
+    pub limit: Option<u64>,
+}
+
+impl From<UserNoteListQuery> for NotesPagingParams {
+    fn from(value: UserNoteListQuery) -> Self {
+        NotesPagingParams {
+            offset: value.offset,
+            limit: value.limit,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct UserNoteListResponse {
+    pub total: u64,
     pub notes: Vec<UserNoteResponse>,
 }
 
-impl From<Vec<Note>> for UserNoteListResponse {
-    fn from(value: Vec<Note>) -> Self {
+impl From<NotesPage> for UserNoteListResponse {
+    fn from(value: NotesPage) -> Self {
         UserNoteListResponse {
-            notes: value.iter().map(|n| n.clone().into()).collect(),
+            total: value.total,
+            notes: value.notes.iter().map(|n| n.clone().into()).collect(),
         }
     }
 }

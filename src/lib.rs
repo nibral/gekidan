@@ -12,6 +12,7 @@ pub mod domain {
     pub mod note {
         pub mod note;
         pub mod note_repository;
+        pub mod paging;
     }
 
     pub mod user {

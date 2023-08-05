@@ -2,6 +2,7 @@ use std::sync::Arc;
 use crate::domain::error::CommonError;
 use crate::domain::note::note::{Note, NoteStatus};
 use crate::domain::note::note_repository::NoteRepository;
+use crate::domain::note::paging::{NotesPage, NotesPagingParams};
 
 pub struct UserNoteUseCase {
     note_repository: Arc<dyn NoteRepository>,
@@ -24,9 +25,9 @@ impl UserNoteUseCase {
             .map(|_| new_note)
     }
 
-    pub async fn list(&self, user_id: &String) -> Result<Vec<Note>, CommonError> {
+    pub async fn list(&self, user_id: &String, paging_params: &NotesPagingParams) -> Result<NotesPage, CommonError> {
         self.note_repository
-            .list(user_id)
+            .list(user_id, paging_params)
             .await
     }
 

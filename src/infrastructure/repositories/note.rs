@@ -1,10 +1,11 @@
 use async_trait::async_trait;
-use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, DbConn, QueryFilter};
+use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, DbConn, QueryFilter, QueryOrder, QuerySelect};
 use sea_orm::ActiveValue::Set;
 use sea_orm::prelude::*;
 use crate::domain::error::{CommonError, CommonErrorCode};
 use crate::domain::note::note::{Note, NoteStatus};
 use crate::domain::note::note_repository::NoteRepository;
+use crate::domain::note::paging::{NotesPage, NotesPagingParams};
 use crate::infrastructure::databases::converters::note::restore;
 use crate::infrastructure::databases::entities::note;
 
@@ -32,14 +33,32 @@ impl NoteRepository for NoteSeaORMRepository {
         }
     }
 
-    async fn list(&self, user_id: &String) -> Result<Vec<Note>, CommonError> {
+    async fn list(&self, user_id: &String, paging_params: &NotesPagingParams) -> Result<NotesPage, CommonError> {
         let published: i32 = NoteStatus::PUBLISHED.into();
+
+        // total count
+        let total = note::Entity::find()
+            .filter(note::Column::Status.eq(published))
+            .count(&self.db_conn)
+            .await;
+        let total = match total {
+            Ok(c) => c,
+            Err(e) => {
+                log::error!("Failed to get num of notes: {}", e.to_string());
+                return Err(CommonError::new(CommonErrorCode::DBError));
+            }
+        };
+
+        // select published notes
         let result = note::Entity::find()
             .filter(
                 Condition::all()
                     .add(note::Column::UserId.eq(user_id))
                     .add(note::Column::Status.eq(published))
             )
+            .order_by_desc(note::Column::CreatedAt)
+            .offset(paging_params.offset())
+            .limit(paging_params.limit())
             .all(&self.db_conn)
             .await;
         let notes = match result {
@@ -53,7 +72,10 @@ impl NoteRepository for NoteSeaORMRepository {
                 return Err(CommonError::new(CommonErrorCode::DBError));
             }
         };
-        Ok(notes)
+        Ok(NotesPage {
+            total,
+            notes,
+        })
     }
 
     async fn get(&self, user_id: &String, note_id: &String) -> Result<Note, CommonError> {
