@@ -33,8 +33,13 @@ impl NoteRepository for NoteSeaORMRepository {
     }
 
     async fn list(&self, user_id: &String) -> Result<Vec<Note>, CommonError> {
+        let published: i32 = NoteStatus::PUBLISHED.into();
         let result = note::Entity::find()
-            .filter(note::Column::UserId.eq(user_id))
+            .filter(
+                Condition::all()
+                    .add(note::Column::UserId.eq(user_id))
+                    .add(note::Column::Status.eq(published))
+            )
             .all(&self.db_conn)
             .await;
         let notes = match result {
@@ -52,11 +57,13 @@ impl NoteRepository for NoteSeaORMRepository {
     }
 
     async fn get(&self, user_id: &String, note_id: &String) -> Result<Note, CommonError> {
+        let published: i32 = NoteStatus::PUBLISHED.into();
         let note = note::Entity::find()
             .filter(
                 Condition::all()
                     .add(note::Column::Id.eq(note_id))
                     .add(note::Column::UserId.eq(user_id))
+                    .add(note::Column::Status.eq(published))
             )
             .one(&self.db_conn)
             .await;
@@ -88,11 +95,7 @@ impl NoteRepository for NoteSeaORMRepository {
         };
         let mut target: note::ActiveModel = target.into();
 
-        target.status = match note.status {
-            NoteStatus::PUBLISHED => Set(1),
-            NoteStatus::DELETED => Set(2),
-            NoteStatus::UNKNOWN => Set(0),
-        };
+        target.status = Set(note.status.into());
         target.updated_at = Set((&note.updated_at).to_rfc3339());
 
         match target.update(&self.db_conn).await {

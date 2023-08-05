@@ -55,9 +55,9 @@ pub fn create_app() -> App<
                 .service(
                     web::scope("/notes")
                         .route("", web::post().to(user_note::create_user_note))
-                        .route("", web::get().to(user_note::list_notes))
-                        .route("/{note_id}", web::get().to(echo::echo_ok))
-                        .route("/{note_id}", web::delete().to(echo::echo_ok))
+                        .route("", web::get().to(user_note::list_user_notes))
+                        .route("/{note_id}", web::get().to(user_note::get_user_note))
+                        .route("/{note_id}", web::delete().to(user_note::delete_user_note))
                 )
                 .route("", web::get().to(echo::echo_ok))
                 .route("/inbox", web::get().to(echo::echo_ok))

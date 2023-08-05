@@ -11,7 +11,7 @@ pub struct Note {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum NoteStatus {
     UNKNOWN,
     PUBLISHED,

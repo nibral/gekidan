@@ -16,13 +16,33 @@ pub async fn create_user_note(
     Ok(Json(note.into()))
 }
 
-pub async fn list_notes(
+pub async fn list_user_notes(
     container: Data<Arc<Container>>,
     params: Path<String>,
 ) -> Result<Json<UserNoteListResponse>, ApiError> {
     let usecase = &container.user_note_usecase;
     let notes = usecase.list(&params.into_inner()).await?;
     Ok(Json(UserNoteListResponse::from(notes)))
+}
+
+pub async fn get_user_note(
+    container: Data<Arc<Container>>,
+    params: Path<(String, String)>,
+) -> Result<Json<UserNoteResponse>, ApiError> {
+    let usecase = &container.user_note_usecase;
+    let (user_id, note_id) = params.into_inner();
+    let note = usecase.get(&user_id, &note_id).await?;
+    Ok(Json(note.into()))
+}
+
+pub async fn delete_user_note(
+    container: Data<Arc<Container>>,
+    params: Path<(String, String)>,
+) -> Result<String, ApiError> {
+    let usecase = &container.user_note_usecase;
+    let (user_id, note_id) = params.into_inner();
+    usecase.delete(&user_id, &note_id).await?;
+    Ok("ok".to_string())
 }
 
 #[derive(Serialize, Deserialize)]
