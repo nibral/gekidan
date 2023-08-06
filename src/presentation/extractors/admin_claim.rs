@@ -16,7 +16,7 @@ impl FromRequest for AdminClaim {
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
         let container = req.app_data::<Data<Arc<Container>>>().unwrap();
         let correct = (&container.app_config.admin_api_key).clone();
-        let challenge = match get_api_key(req) {
+        let challenge = match get_admin_api_key(req) {
             Some(v) => v.to_string(),
             None => "".to_string()
         };
@@ -31,6 +31,6 @@ impl FromRequest for AdminClaim {
     }
 }
 
-fn get_api_key(req: &HttpRequest) -> Option<&str> {
+fn get_admin_api_key(req: &HttpRequest) -> Option<&str> {
     req.headers().get("x-admin-api-key")?.to_str().ok()
 }

@@ -5,8 +5,10 @@ use crate::app::container::Container;
 use crate::domain::note::note::Note;
 use crate::domain::note::paging::{NotesPage, NotesPagingParams};
 use crate::presentation::errors::api::ApiError;
+use crate::presentation::extractors::admin_claim::AdminClaim;
 
 pub async fn create_user_note(
+    _: AdminClaim,
     container: Data<Arc<Container>>,
     params: Path<String>,
     post_data: Json<CreateUserNoteRequest>,
@@ -18,6 +20,7 @@ pub async fn create_user_note(
 }
 
 pub async fn list_user_notes(
+    _: AdminClaim,
     container: Data<Arc<Container>>,
     params: Path<String>,
     queries: Query<UserNoteListQuery>,
@@ -28,6 +31,7 @@ pub async fn list_user_notes(
 }
 
 pub async fn get_user_note(
+    _: AdminClaim,
     container: Data<Arc<Container>>,
     params: Path<(String, String)>,
 ) -> Result<Json<UserNoteResponse>, ApiError> {
@@ -38,6 +42,7 @@ pub async fn get_user_note(
 }
 
 pub async fn delete_user_note(
+    _: AdminClaim,
     container: Data<Arc<Container>>,
     params: Path<(String, String)>,
 ) -> Result<String, ApiError> {

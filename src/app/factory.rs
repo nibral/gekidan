@@ -40,6 +40,7 @@ pub fn create_app() -> App<
             web::scope("/nodeinfo/2.1").route("", web::get().to(activity_pub::node_info))
         )
         .service(
+            // require x-admin-api-key header
             web::scope("/admin")
                 .service(
                     web::scope("/users")
@@ -52,6 +53,8 @@ pub fn create_app() -> App<
         )
         .service(
             web::scope("/users/{user_id}")
+
+                // require x-admin-api-key header
                 .service(
                     web::scope("/notes")
                         .route("", web::post().to(user_note::create_user_note))
@@ -59,6 +62,8 @@ pub fn create_app() -> App<
                         .route("/{note_id}", web::get().to(user_note::get_user_note))
                         .route("/{note_id}", web::delete().to(user_note::delete_user_note))
                 )
+
+                // public
                 .route("", web::get().to(echo::echo_ok))
                 .route("/inbox", web::get().to(echo::echo_ok))
                 .route("/outbox", web::get().to(echo::echo_ok))

@@ -19,8 +19,10 @@ mod test_user_note_controller {
         let db = Database::connect(dotenv::var("DATABASE_URL").unwrap()).await.unwrap();
         let _ = Migrator::fresh(&db).await;
 
-        // add user
+        // auth header
         let api_key = ("x-admin-api-key", dotenv::var("ADMIN_API_KEY").unwrap());
+
+        // add user
         let res = test::TestRequest::post().uri("/admin/users")
             .append_header(api_key.clone())
             .append_header(("Content-Type", "application/json"))
@@ -33,6 +35,7 @@ mod test_user_note_controller {
 
         // list
         let res = test::TestRequest::get().uri(&format!("/users/{}/notes", uid))
+            .append_header(api_key.clone())
             .send_request(&app)
             .await;
         assert!(res.status().is_success());
@@ -42,6 +45,7 @@ mod test_user_note_controller {
 
         // add
         let res = test::TestRequest::post().uri(&format!("/users/{}/notes", uid))
+            .append_header(api_key.clone())
             .append_header(("Content-Type", "application/json"))
             .set_payload(r#"{"content": "foobarbaz111"}"#)
             .send_request(&app)
@@ -53,6 +57,7 @@ mod test_user_note_controller {
 
         // add
         let res = test::TestRequest::post().uri(&format!("/users/{}/notes", uid))
+            .append_header(api_key.clone())
             .append_header(("Content-Type", "application/json"))
             .set_payload(r#"{"content": "foobarbaz222"}"#)
             .send_request(&app)
@@ -63,6 +68,7 @@ mod test_user_note_controller {
 
         // list
         let res = test::TestRequest::get().uri(&format!("/users/{}/notes", uid))
+            .append_header(api_key.clone())
             .send_request(&app)
             .await;
         assert!(res.status().is_success());
@@ -72,6 +78,7 @@ mod test_user_note_controller {
 
         // get
         let res = test::TestRequest::get().uri(&format!("/users/{}/notes/{}", uid, nid))
+            .append_header(api_key.clone())
             .send_request(&app)
             .await;
         assert!(res.status().is_success());
@@ -80,17 +87,25 @@ mod test_user_note_controller {
 
         // delete
         let res = test::TestRequest::delete().uri(&format!("/users/{}/notes/{}", uid, nid))
+            .append_header(api_key.clone())
             .send_request(&app)
             .await;
         assert!(res.status().is_success());
 
         // list
         let res = test::TestRequest::get().uri(&format!("/users/{}/notes", uid))
+            .append_header(api_key.clone())
             .send_request(&app)
             .await;
         assert!(res.status().is_success());
         let body: UserNoteListResponse = test::read_body_json(res).await;
         assert_eq!(body.total, 1);
         assert_eq!(body.notes.len(), 1);
+
+        // list without admin api-key (fail)
+        let res = test::TestRequest::get().uri(&format!("/users/{}/notes", uid))
+            .send_request(&app)
+            .await;
+        assert!(!res.status().is_success());
     }
 }
