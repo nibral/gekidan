@@ -1,9 +1,10 @@
 use std::sync::Arc;
-use actix_web::{HttpResponse, Responder};
-use actix_web::web::{Data, Query};
+use actix_web::{HttpResponse, Responder, ResponseError};
+use actix_web::web::{Data, Path, Query};
 use serde::Deserialize;
 use serde_json::json;
 use crate::app::container::Container;
+use crate::presentation::errors::api::ApiError;
 use crate::usecase::activity_pub::WebFingerParams;
 
 pub async fn host_meta(
@@ -40,6 +41,30 @@ pub async fn node_info(
 ) -> impl Responder {
     let body = (&container.activity_pub_usecase).node_info().await;
     HttpResponse::Ok().json(body)
+}
+
+pub async fn actor_by_username(
+    container: Data<Arc<Container>>,
+    params: Path<String>,
+) -> impl Responder {
+    match (&container.activity_pub_usecase).actor_by_username(&params.into_inner()).await {
+        Ok(p) => HttpResponse::Ok()
+            .content_type("application/activity+json; charset=utf-8")
+            .body(json!(p).to_string()),
+        Err(e) => ApiError::from(e).error_response(),
+    }
+}
+
+pub async fn actor_by_user_id(
+    container: Data<Arc<Container>>,
+    params: Path<String>,
+) -> impl Responder {
+    match (&container.activity_pub_usecase).redirect_to_username(&params.into_inner()).await {
+        Ok(l) => HttpResponse::Found()
+            .insert_header(("Location", l))
+            .body(""),
+        Err(e) => ApiError::from(e).error_response(),
+    }
 }
 
 #[derive(Deserialize)]

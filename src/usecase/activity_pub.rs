@@ -1,7 +1,8 @@
 use std::sync::Arc;
-use crate::domain::activity_pub::activity_pub::{NodeInfo, NodeInfoLinks, WebFinger};
+use crate::domain::activity_pub::activity_pub::{NodeInfo, NodeInfoLinks, Person, WebFinger};
 use crate::domain::activity_pub::activity_pub_service::ActivityPubService;
 use crate::domain::app_config::AppConfig;
+use crate::domain::error::CommonError;
 
 pub struct ActivityPubUseCase {
     app_url: String,
@@ -33,6 +34,14 @@ impl ActivityPubUseCase {
 
     pub async fn node_info(&self) -> NodeInfo {
         self.activity_pub_service.node_info().await
+    }
+
+    pub async fn actor_by_username(&self, username: &String) -> Result<Person, CommonError> {
+        self.activity_pub_service.actor(username, &self.app_url).await
+    }
+
+    pub async fn redirect_to_username(&self, user_id: &String) -> Result<String, CommonError> {
+        self.activity_pub_service.get_redirect_url_to_username(user_id, &self.app_url).await
     }
 }
 

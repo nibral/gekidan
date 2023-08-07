@@ -64,8 +64,12 @@ pub fn create_app() -> App<
                 )
 
                 // public
-                .route("", web::get().to(echo::echo_ok))
+                .route("", web::get().to(activity_pub::actor_by_user_id))
                 .route("/inbox", web::get().to(echo::echo_ok))
                 .route("/outbox", web::get().to(echo::echo_ok))
+        )
+        .service(
+            web::scope("/@{username}")
+                .route("", web::get().to(activity_pub::actor_by_username))
         )
 }

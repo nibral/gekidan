@@ -60,3 +60,31 @@ pub struct NodeInfoUsers {
 
 #[derive(Serialize)]
 pub struct NodeInfoMetadata {}
+
+#[derive(Serialize)]
+pub struct PersonPublicKey {
+    pub id: String,
+    pub owner: String,
+    #[serde(rename(serialize = "publicKeyPem"))]
+    pub public_key_pem: String,
+}
+
+#[derive(Serialize)]
+pub struct Person {
+    #[serde(rename(serialize = "@context"))]
+    pub context: Vec<String>,
+    pub id: String,
+    pub r#type: String,
+    #[serde(rename(serialize = "preferredUsername"))]
+    pub preferred_username: String,
+    pub inbox: String,
+    pub outbox: String,
+    #[serde(rename(serialize = "sharedInbox"))]
+    pub shared_inbox: String,
+    #[serde(rename(serialize = "publicKey"))]
+    pub public_key: PersonPublicKey,
+    pub featured: String,
+    #[serde(rename(serialize = "manuallyApprovesFollowers"))]
+    pub manually_approves_followers: bool,
+    pub discoverable: bool,
+}
