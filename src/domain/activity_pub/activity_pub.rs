@@ -1,4 +1,9 @@
-use serde::Serialize;
+use std::fmt::Formatter;
+use std::marker::PhantomData;
+use std::str::FromStr;
+use serde::{de, Deserialize, Deserializer, Serialize};
+use serde::de::{Error, MapAccess, Visitor};
+use void::Void;
 
 #[derive(Serialize)]
 pub struct WebFinger {
@@ -155,4 +160,82 @@ pub struct ActivityNoteBox {
     pub total_items: i16,
     #[serde(rename(serialize = "orderedItems"))]
     pub ordered_items: Vec<ActivityNoteItem>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct InboxObject {
+    pub r#type: String,
+    pub id: String,
+    pub actor: String,
+    pub object: String,
+}
+
+impl FromStr for InboxObject {
+    type Err = Void;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(InboxObject {
+            r#type: "".to_string(),
+            id: "".to_string(),
+            actor: "".to_string(),
+            object: s.to_string(),
+        })
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct InboxActivity {
+    pub r#type: String,
+    pub id: String,
+    pub actor: String,
+    #[serde(deserialize_with = "string_or_struct")]
+    pub object: InboxObject,
+}
+
+// https://serde.rs/string-or-struct.html
+fn string_or_struct<'de, T, D>(deserializer: D) -> Result<T, D::Error>
+    where
+        T: Deserialize<'de> + FromStr<Err=Void>,
+        D: Deserializer<'de>
+{
+    struct StringOrStruct<T>(PhantomData<fn() -> T>);
+
+    impl<'de, T> Visitor<'de> for StringOrStruct<T>
+        where
+            T: Deserialize<'de> + FromStr<Err=Void>,
+    {
+        type Value = T;
+
+        fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+            formatter.write_str("string or map")
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where E: Error
+        {
+            Ok(FromStr::from_str(v).unwrap())
+        }
+
+        fn visit_map<A>(self, map: A) -> Result<Self::Value, A::Error> where A: MapAccess<'de> {
+            Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))
+        }
+    }
+
+    deserializer.deserialize_any(StringOrStruct(PhantomData))
+}
+
+#[derive(Serialize)]
+pub struct FollowAcceptObject {
+    pub r#type: String,
+    pub actor: String,
+    pub object: String,
+}
+
+#[derive(Serialize)]
+pub struct FollowAccept {
+    #[serde(rename(serialize = "@context"))]
+    pub context: String,
+    pub summary: String,
+    pub r#type: String,
+    pub actor: String,
+    pub object: FollowAcceptObject,
 }

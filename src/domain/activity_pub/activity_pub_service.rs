@@ -1,7 +1,14 @@
 use std::sync::Arc;
+use std::time::SystemTime;
+use actix_web::http::header::Date;
+use awc::Client;
+use base64::{Engine as _, engine::general_purpose};
+use serde_json::json;
+use sha256::digest;
 use url::Url;
 use crate::domain::activity_pub::activity_pub::*;
 use crate::domain::error::{CommonError, CommonErrorCode};
+use crate::domain::user::user::User;
 use crate::domain::user::user_repository::UserRepository;
 
 const AP_HOST_META_TEMPLATE: &str = &r#"<?xml version="1.0"?>
@@ -127,6 +134,61 @@ impl ActivityPubService {
         };
         Ok(format!("{}@{}", app_url, user.username))
     }
+
+    pub async fn send_follow_accept(&self, user: &User, activity: &InboxActivity, app_url: &String) -> Result<(), CommonError> {
+        let accept = FollowAccept {
+            context: "https://www.w3.org/ns/activitystreams".to_string(),
+            summary: "Accepted".to_string(),
+            r#type: "Accept".to_string(),
+            actor: format!("{}@{}", app_url, user.username),
+            object: FollowAcceptObject {
+                r#type: activity.r#type.clone(),
+                actor: activity.actor.clone(),
+                object: activity.object.object.clone(),
+            },
+        };
+        let body = json!(accept).to_string();
+
+        // http signature
+        let url = format!("{}/inbox", activity.actor);
+        let parsed_url = Url::parse(&url).unwrap();
+        let now = Date(SystemTime::now().into());
+        let digest_header = http_digest_header(&body);
+        let signature_data = format!(
+            "(request-target): post {}\nhost: {}\ndate: {}\ndigest: {}",
+            parsed_url.path(), parsed_url.host_str().unwrap(), now, digest_header
+        );
+        let signature = user.sign(signature_data.as_bytes());
+
+        // send accept
+        let accept_req = Client::default().post(url)
+            .insert_header(("Host", parsed_url.host_str().unwrap()))
+            .insert_header(now)
+            .insert_header(("Digest", digest_header))
+            .insert_header(("Content-Type", "application/activity+json; charset=utf-8"))
+            .insert_header((
+                "Signature",
+                format!(
+                    "keyId=\"{}users/{}#main-key\",algorithm=\"rsa-sha256\",headers=\"(request-target) host date digest\",signature=\"{}\"",
+                    app_url, user.id, signature
+                )
+            ));
+        let res = accept_req.send_body(body).await;
+        println!("{res:?}");
+
+        Ok(())
+    }
+}
+
+fn http_digest_header(data: &String) -> String {
+    let sha256_hash = digest(data);
+    let binaries = sha256_hash.chars()
+        .collect::<Vec<char>>()
+        .chunks(2)
+        .map(|c| c.iter().collect::<String>())
+        .map(|hex| u8::from_str_radix(&hex, 16).unwrap())
+        .collect::<Vec<u8>>();
+    format!("SHA-256={}", general_purpose::STANDARD.encode(binaries))
 }
 
 #[cfg(test)]

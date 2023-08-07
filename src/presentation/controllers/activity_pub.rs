@@ -1,12 +1,12 @@
 use std::sync::Arc;
 use actix_web::{HttpResponse, Responder, ResponseError};
-use actix_web::web::{Data, Path, Query};
+use actix_web::web::{Data, Json, Path, Query};
 use serde::Deserialize;
 use serde_json::json;
 use crate::app::container::Container;
-use crate::domain::activity_pub::activity_pub::ActivityNoteBox;
+use crate::domain::activity_pub::activity_pub::{ActivityNoteBox, InboxActivity};
 use crate::presentation::errors::api::ApiError;
-use crate::usecase::activity_pub::WebFingerParams;
+use crate::usecase::activity_pub::{WebFingerParams};
 
 pub async fn host_meta(
     container: Data<Arc<Container>>
@@ -68,8 +68,16 @@ pub async fn actor_by_user_id(
     }
 }
 
-pub async fn post_inbox() -> impl Responder {
-    HttpResponse::Ok()
+pub async fn post_inbox(
+    container: Data<Arc<Container>>,
+    params: Path<String>,
+    post_data: Json<InboxActivity>,
+) -> impl Responder {
+    let activity = post_data.into_inner();
+    match (&container.activity_pub_usecase).process_inbox_activity(&params.into_inner(), &activity).await {
+        Ok(_) => HttpResponse::Ok().body("ok"),
+        Err(e) => ApiError::from(e).error_response(),
+    }
 }
 
 pub async fn get_outbox() -> impl Responder {

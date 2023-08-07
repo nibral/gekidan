@@ -37,7 +37,11 @@ impl Container {
             ActivityPubService::new(user_repository.clone()),
         );
         let activity_pub_usecase = Arc::new(
-            ActivityPubUseCase::new(app_config.clone(), activity_pub_service),
+            ActivityPubUseCase::new(
+                app_config.clone(),
+                activity_pub_service,
+                user_repository.clone(),
+            ),
         );
 
         let user_service: Arc<UserService> = Arc::new(
