@@ -4,6 +4,7 @@ use actix_web::web::{Data, Path, Query};
 use serde::Deserialize;
 use serde_json::json;
 use crate::app::container::Container;
+use crate::domain::activity_pub::activity_pub::ActivityNoteBox;
 use crate::presentation::errors::api::ApiError;
 use crate::usecase::activity_pub::WebFingerParams;
 
@@ -65,6 +66,22 @@ pub async fn actor_by_user_id(
             .body(""),
         Err(e) => ApiError::from(e).error_response(),
     }
+}
+
+pub async fn post_inbox() -> impl Responder {
+    HttpResponse::Ok()
+}
+
+pub async fn get_outbox() -> impl Responder {
+    HttpResponse::Ok()
+        .content_type("application/activity+json; charset=utf-8")
+        .body(json!(ActivityNoteBox {
+            context: "https://www.w3.org/ns/activitystreams".to_string(),
+            summary: "outbox".to_string(),
+            r#type: "OrderedCollection".to_string(),
+            total_items: 0,
+            ordered_items: vec![],
+        }).to_string())
 }
 
 #[derive(Deserialize)]

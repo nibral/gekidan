@@ -88,3 +88,71 @@ pub struct Person {
     pub manually_approves_followers: bool,
     pub discoverable: bool,
 }
+
+#[derive(Serialize)]
+pub struct ActivityObject {
+    #[serde(rename(serialize = "@context"))]
+    pub context: String,
+    pub r#type: String,
+    pub id: String,
+    pub published: String,
+    pub to: Vec<String>,
+    pub cc: Vec<String>,
+    pub content: String,
+}
+
+#[derive(Serialize)]
+pub struct ActivityNoteItem {
+    #[serde(rename(serialize = "@context"))]
+    pub context: String,
+    pub r#type: String,
+    pub id: String,
+    pub published: String,
+    pub to: Vec<String>,
+    pub cc: Vec<String>,
+    pub actor: String,
+    pub object: ActivityObject,
+}
+
+pub struct ActivityItemParams {
+    pub app_url: String,
+    pub user_id: String,
+    pub note_id: String,
+    pub content: String,
+    pub published: String,
+}
+
+impl ActivityNoteItem {
+    fn new(params: &ActivityItemParams) -> Self {
+        ActivityNoteItem {
+            context: "https://www.w3.org/ns/activitystreams".to_string(),
+            r#type: "Create".to_string(),
+            id: format!("{}notes/{}", params.app_url, params.note_id),
+            published: params.published.clone(),
+            to: vec!["https://www.w3.org/ns/activitystreams#Public".to_string()],
+            cc: vec![format!("{}users/{}/followers", params.app_url, params.user_id)],
+            actor: format!("{}users/{}", params.app_url, params.user_id),
+            object: ActivityObject {
+                context: "https://www.w3.org/ns/activitystreams".to_string(),
+                r#type: "Note".to_string(),
+                id: format!("{}notes/{}", params.app_url, params.note_id),
+                published: params.published.clone(),
+                to: vec!["https://www.w3.org/ns/activitystreams#Public".to_string()],
+                cc: vec![format!("{}users/{}/followers", params.app_url, params.user_id)],
+                content: params.content.clone(),
+            },
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct ActivityNoteBox {
+    #[serde(rename(serialize = "@context"))]
+    pub context: String,
+    pub summary: String,
+    pub r#type: String,
+    #[serde(rename(serialize = "totalItems"))]
+    pub total_items: i16,
+    #[serde(rename(serialize = "orderedItems"))]
+    pub ordered_items: Vec<ActivityNoteItem>,
+}
