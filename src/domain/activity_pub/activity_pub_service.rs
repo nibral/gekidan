@@ -140,7 +140,7 @@ impl ActivityPubService {
             context: "https://www.w3.org/ns/activitystreams".to_string(),
             summary: "Accepted".to_string(),
             r#type: "Accept".to_string(),
-            actor: format!("{}@{}", app_url, user.username),
+            actor: format!("{}users/{}", app_url, user.id),
             object: FollowAcceptObject {
                 r#type: activity.r#type.clone(),
                 actor: activity.actor.clone(),
@@ -173,9 +173,7 @@ impl ActivityPubService {
                     app_url, user.id, signature
                 )
             ));
-        let res = accept_req.send_body(body).await;
-        println!("{res:?}");
-
+        let _ = accept_req.send_body(body).await;
         Ok(())
     }
 }

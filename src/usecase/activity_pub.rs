@@ -3,12 +3,15 @@ use crate::domain::activity_pub::activity_pub::{InboxActivity, NodeInfo, NodeInf
 use crate::domain::activity_pub::activity_pub_service::ActivityPubService;
 use crate::domain::app_config::AppConfig;
 use crate::domain::error::{CommonError, CommonErrorCode};
+use crate::domain::follower::follower::Follower;
+use crate::domain::follower::follower_repository::FollowerRepository;
 use crate::domain::user::user_repository::UserRepository;
 
 pub struct ActivityPubUseCase {
     app_url: String,
     activity_pub_service: Arc<ActivityPubService>,
     user_repository: Arc<dyn UserRepository>,
+    follower_repository: Arc<dyn FollowerRepository>,
 }
 
 impl ActivityPubUseCase {
@@ -16,11 +19,13 @@ impl ActivityPubUseCase {
         app_config: Arc<AppConfig>,
         activity_pub_service: Arc<ActivityPubService>,
         user_repository: Arc<dyn UserRepository>,
+        follower_repository: Arc<dyn FollowerRepository>,
     ) -> Self {
         ActivityPubUseCase {
             app_url: app_config.app_url.clone(),
             activity_pub_service,
             user_repository,
+            follower_repository,
         }
     }
 
@@ -49,17 +54,26 @@ impl ActivityPubUseCase {
     }
 
     pub async fn process_inbox_activity(&self, user_id: &String, activity: &InboxActivity) -> Result<(), CommonError> {
-        let user = match self.user_repository.get(user_id).await {
-            Ok(u) => u,
-            Err(e) => return Err(e),
-        };
+        let user = self.user_repository.get(user_id).await?;
 
         match &*activity.r#type {
             "Follow" => {
+                let follower = Follower::new(
+                    &user.id,
+                    &activity.actor,
+                    &activity.object.object,
+                    &format!("{}/inbox", activity.actor)
+                );
+                self.follower_repository.add(&follower).await?;
                 self.activity_pub_service.send_follow_accept(&user, &activity, &self.app_url).await
             }
             "Undo" => {
-                // followを削除する処理
+                let followers = self.follower_repository.list(&user.id).await?;
+                for f in followers.iter() {
+                    if f.actor == activity.object.actor {
+                        self.follower_repository.delete(f.id).await?;
+                    }
+                }
                 Ok(())
             }
             _ => Err(CommonError::new(CommonErrorCode::UnexpectedError))

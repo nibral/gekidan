@@ -9,6 +9,11 @@ pub mod domain {
         pub mod activity_pub_service;
     }
 
+    pub mod follower {
+        pub mod follower;
+        pub mod follower_repository;
+    }
+
     pub mod note {
         pub mod note;
         pub mod note_repository;
@@ -34,6 +39,7 @@ pub mod infrastructure {
 
     pub mod databases {
         pub mod converters {
+            pub mod follower;
             pub mod note;
             pub mod user;
         }
@@ -42,6 +48,7 @@ pub mod infrastructure {
     }
 
     pub mod repositories {
+        pub mod follower;
         pub mod note;
         pub mod user;
     }

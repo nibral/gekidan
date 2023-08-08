@@ -2,10 +2,12 @@ use std::sync::Arc;
 use sea_orm::Database;
 use crate::domain::activity_pub::activity_pub_service::ActivityPubService;
 use crate::domain::app_config::AppConfig;
+use crate::domain::follower::follower_repository::FollowerRepository;
 use crate::domain::note::note_repository::NoteRepository;
 use crate::domain::user::user_repository::UserRepository;
 use crate::domain::user::user_service::UserService;
 use crate::infrastructure::config::env_file::load_app_config;
+use crate::infrastructure::repositories::follower::FollowerSeaORMRepository;
 use crate::infrastructure::repositories::note::NoteSeaORMRepository;
 use crate::infrastructure::repositories::user::UserSeaORMRepository;
 use crate::usecase::activity_pub::ActivityPubUseCase;
@@ -32,6 +34,9 @@ impl Container {
         let note_repository: Arc<dyn NoteRepository> = Arc::new(
             NoteSeaORMRepository::new(db_conn.clone())
         );
+        let follower_repository: Arc<dyn FollowerRepository> = Arc::new(
+            FollowerSeaORMRepository::new(db_conn.clone())
+        );
 
         let activity_pub_service = Arc::new(
             ActivityPubService::new(user_repository.clone()),
@@ -41,6 +46,7 @@ impl Container {
                 app_config.clone(),
                 activity_pub_service,
                 user_repository.clone(),
+                follower_repository.clone(),
             ),
         );
 
