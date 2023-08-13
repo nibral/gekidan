@@ -3,11 +3,14 @@ use std::time::SystemTime;
 use actix_web::http::header::Date;
 use awc::Client;
 use base64::{Engine as _, engine::general_purpose};
+use chrono::Utc;
 use serde_json::json;
 use sha256::digest;
 use url::Url;
 use crate::domain::activity_pub::activity_pub::*;
 use crate::domain::error::{CommonError, CommonErrorCode};
+use crate::domain::follower::follower::Follower;
+use crate::domain::note::note::Note;
 use crate::domain::user::user::User;
 use crate::domain::user::user_repository::UserRepository;
 
@@ -133,6 +136,47 @@ impl ActivityPubService {
             Err(e) => return Err(e),
         };
         Ok(format!("{}@{}", app_url, user.username))
+    }
+
+    pub async fn send_note(&self, sender: &User, note: &Note, recipients: Vec<Follower>, app_url: &String) -> Result<(), CommonError> {
+        let item = ActivityNoteItem::new(&ActivityItemParams {
+            app_url: app_url.clone(),
+            user_id: sender.id.clone(),
+            note_id: note.id.clone(),
+            content: note.content.clone(),
+            published: Utc::now().to_rfc3339(),
+        });
+        let body = json!(item).to_string();
+
+        let now = Date(SystemTime::now().into());
+        for r in recipients.iter() {
+
+            // http signature
+            let parsed_url = Url::parse(&r.inbox).unwrap();
+            let digest_header = http_digest_header(&body);
+            let signature_data = format!(
+                "(request-target): post {}\nhost: {}\ndate: {}\ndigest: {}",
+                parsed_url.path(), parsed_url.host_str().unwrap(), now, digest_header
+            );
+            let signature = sender.sign(signature_data.as_bytes());
+
+            // send note
+            let req = Client::default().post(&r.inbox)
+                .insert_header(("Host", parsed_url.host_str().unwrap()))
+                .insert_header(now.clone())
+                .insert_header(("Digest", digest_header))
+                .insert_header(("Content-Type", "application/activity+json; charset=utf-8"))
+                .insert_header((
+                    "Signature",
+                    format!(
+                        "keyId=\"{}users/{}#main-key\",algorithm=\"rsa-sha256\",headers=\"(request-target) host date digest\",signature=\"{}\"",
+                        app_url, sender.id, signature
+                    )
+                ));
+            let _ = req.send_body(body.clone()).await;
+        }
+
+        Ok(())
     }
 
     pub async fn send_follow_accept(&self, user: &User, activity: &InboxActivity, app_url: &String) -> Result<(), CommonError> {

@@ -1,28 +1,48 @@
 use std::sync::Arc;
+use crate::domain::activity_pub::activity_pub_service::ActivityPubService;
+use crate::domain::app_config::AppConfig;
 use crate::domain::error::CommonError;
+use crate::domain::follower::follower_repository::FollowerRepository;
 use crate::domain::note::note::{Note, NoteStatus};
 use crate::domain::note::note_repository::NoteRepository;
 use crate::domain::note::paging::{NotesPage, NotesPagingParams};
+use crate::domain::user::user_repository::UserRepository;
 
 pub struct UserNoteUseCase {
+    app_config: Arc<AppConfig>,
     note_repository: Arc<dyn NoteRepository>,
+    user_repository: Arc<dyn UserRepository>,
+    follower_repository: Arc<dyn FollowerRepository>,
+    activity_pub_service: Arc<ActivityPubService>,
 }
 
 impl UserNoteUseCase {
     pub fn new(
+        app_config: Arc<AppConfig>,
         note_repository: Arc<dyn NoteRepository>,
+        user_repository: Arc<dyn UserRepository>,
+        follower_repository: Arc<dyn FollowerRepository>,
+        activity_pub_service: Arc<ActivityPubService>,
     ) -> Self {
         UserNoteUseCase {
+            app_config,
             note_repository,
+            user_repository,
+            follower_repository,
+            activity_pub_service,
         }
     }
 
     pub async fn create(&self, user_id: &String, content: &String) -> Result<Note, CommonError> {
-        let new_note = Note::new(user_id, content);
-        self.note_repository
-            .add(&new_note)
-            .await
-            .map(|_| new_note)
+        let user = self.user_repository.get(user_id).await?;
+
+        let new_note = Note::new(&user.id, content);
+        self.note_repository.add(&new_note).await?;
+
+        let recipients = self.follower_repository.list(&user.id).await?;
+        self.activity_pub_service.send_note(&user, &new_note, recipients, &self.app_config.app_url).await?;
+
+        Ok(new_note)
     }
 
     pub async fn list(&self, user_id: &String, paging_params: &NotesPagingParams) -> Result<NotesPage, CommonError> {

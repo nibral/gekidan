@@ -128,7 +128,7 @@ pub struct ActivityItemParams {
 }
 
 impl ActivityNoteItem {
-    fn new(params: &ActivityItemParams) -> Self {
+    pub fn new(params: &ActivityItemParams) -> Self {
         ActivityNoteItem {
             context: "https://www.w3.org/ns/activitystreams".to_string(),
             r#type: "Create".to_string(),

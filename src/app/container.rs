@@ -44,7 +44,7 @@ impl Container {
         let activity_pub_usecase = Arc::new(
             ActivityPubUseCase::new(
                 app_config.clone(),
-                activity_pub_service,
+                activity_pub_service.clone(),
                 user_repository.clone(),
                 follower_repository.clone(),
             ),
@@ -54,11 +54,20 @@ impl Container {
             UserService::new(user_repository.clone())
         );
         let user_management_usecase = Arc::new(
-            UserManagementUseCase::new(user_repository, user_service)
+            UserManagementUseCase::new(
+                user_repository.clone(),
+                user_service.clone(),
+            )
         );
 
         let user_note_usecase = Arc::new(
-            UserNoteUseCase::new(note_repository)
+            UserNoteUseCase::new(
+                app_config.clone(),
+                note_repository,
+                user_repository,
+                follower_repository,
+                activity_pub_service,
+            )
         );
 
         Container {
