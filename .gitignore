@@ -3,4 +3,5 @@
 /.idea
 *.sqlite3
 .env*
+!.env.example
 !.env.test
